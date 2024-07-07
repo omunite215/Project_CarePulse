@@ -1,2 +1,2 @@
-# Project_CarePulse
-Coming Soon!!
+# CarePulse - A Hospital Management System
+## Coming Soon!!
