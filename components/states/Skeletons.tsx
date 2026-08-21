@@ -82,7 +82,7 @@ export function StatCardsSkeleton() {
     <Busy label="Loading appointment counts">
       <div className="admin-stat">
         {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="h-[130px] flex-1 rounded-2xl" />
+          <Skeleton key={i} className="h-32 rounded-2xl" />
         ))}
       </div>
     </Busy>

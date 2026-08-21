@@ -42,8 +42,6 @@ const ARBITRARY =
 
 /** Known violations awaiting the refactor. Delete entries; never add. */
 const ALLOWLIST: Record<string, number> = {
-  "components/admin/AppointmentFilters.tsx": 3,
-  "components/states/Skeletons.tsx": 1,
   "components/table/columns.tsx": 4,
   /**
    * Permanent exemption, not a pending fix. A dialog capping at 92% of the

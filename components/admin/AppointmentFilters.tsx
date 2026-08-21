@@ -38,7 +38,7 @@ export function AppointmentFilters({ controller, onExport, canExport }: Props) {
   }, [search, filters.q, update]);
 
   return (
-    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="grid w-full gap-3 sm:grid-cols-2 lg:flex lg:items-center">
       <div className="relative flex-1">
         <SearchIcon
           className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -60,7 +60,7 @@ export function AppointmentFilters({ controller, onExport, canExport }: Props) {
         }
       >
         <SelectTrigger
-          className="shad-select-trigger sm:w-[170px]"
+          className="shad-select-trigger"
           aria-label="Filter by status"
         >
           <SelectValue />
@@ -75,7 +75,7 @@ export function AppointmentFilters({ controller, onExport, canExport }: Props) {
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:col-span-2 lg:col-auto">
         <label className="sr-only" htmlFor="from">
           From date
         </label>
@@ -86,7 +86,7 @@ export function AppointmentFilters({ controller, onExport, canExport }: Props) {
           onChange={(event) =>
             update({ from: parseInputDate(event.target.value) })
           }
-          className="shad-input w-[150px]"
+          className="shad-input w-full"
         />
         <span className="text-muted-foreground" aria-hidden="true">
           –
@@ -101,7 +101,7 @@ export function AppointmentFilters({ controller, onExport, canExport }: Props) {
           onChange={(event) =>
             update({ to: parseInputDate(event.target.value) })
           }
-          className="shad-input w-[150px]"
+          className="shad-input w-full"
         />
       </div>
 

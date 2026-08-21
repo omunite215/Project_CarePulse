@@ -407,7 +407,7 @@
 }
 
 @utility admin-stat {
-  @apply flex w-full flex-col justify-between gap-5 sm:flex-row xl:gap-10;
+  @apply grid w-full gap-5 sm:grid-cols-3 xl:gap-8;
 }
 
 /* ==========================================================================
@@ -437,7 +437,10 @@
      base they let the page colour through, so in light mode the cards rendered
      white — and their white text vanished. The base keeps these cards dark in
      both themes, which is the intended design. */
-  @apply flex flex-1 flex-col gap-6 rounded-2xl bg-dark-300 bg-cover bg-center p-6 text-white shadow-lg;
+  /* No flex-1: the only parent is admin-stat, now a grid. A grid item already
+     fills its column and stretches to the row height by default, so flex-1
+     (a flex-container-only property) would be dead weight here. */
+  @apply flex flex-col gap-6 rounded-2xl bg-dark-300 bg-cover bg-center p-6 text-white shadow-lg;
 }
 
 @utility status-badge {

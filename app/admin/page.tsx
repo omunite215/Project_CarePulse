@@ -46,7 +46,7 @@ export default async function AdminPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col space-y-14">
+    <div className="mx-auto flex max-w-7xl flex-col space-y-14 2xl:max-w-8xl">
       <header className="admin-header">
         <Link href="/" aria-label="CarePulse home" className="cursor-pointer">
           <Image
