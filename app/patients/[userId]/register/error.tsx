@@ -12,7 +12,7 @@ export default function RegisterError({
   return (
     <main
       id="main"
-      className="flex min-h-screen items-center justify-center px-[5%]"
+      className="page-shell flex min-h-dvh items-center justify-center"
     >
       <div className="w-full max-w-xl">
         <ErrorState

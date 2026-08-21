@@ -7,7 +7,7 @@ export default function NotFound() {
   return (
     <main
       id="main"
-      className="flex min-h-screen flex-col items-center justify-center gap-6 px-[5%] text-center"
+      className="page-shell flex min-h-dvh flex-col items-center justify-center gap-6 text-center"
     >
       <Image
         src="/assets/icons/logo-full.svg"

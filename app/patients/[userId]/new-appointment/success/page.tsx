@@ -23,7 +23,7 @@ export default async function SuccessPage({
   const { userId } = await params;
 
   return (
-    <div className="flex h-screen max-h-screen px-[5%]">
+    <div className="page-shell flex min-h-dvh">
       <div className="success-img">
         <Link href="/" aria-label="CarePulse home">
           <Image
@@ -44,7 +44,7 @@ export default async function SuccessPage({
             aria-hidden="true"
             unoptimized
           />
-          <h1 className="header mb-6 max-w-[600px] text-center">
+          <h1 className="header mb-6 max-w-2xl text-center">
             Your <span className="text-green-500">appointment request</span> has
             been submitted
           </h1>

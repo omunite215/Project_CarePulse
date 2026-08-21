@@ -42,13 +42,6 @@ const ARBITRARY =
 
 /** Known violations awaiting the refactor. Delete entries; never add. */
 const ALLOWLIST: Record<string, number> = {
-  "app/admin/error.tsx": 1,
-  "app/error.tsx": 1,
-  "app/not-found.tsx": 1,
-  "app/patients/[userId]/appointments/error.tsx": 1,
-  "app/patients/[userId]/new-appointment/error.tsx": 1,
-  "app/patients/[userId]/new-appointment/success/page.tsx": 2,
-  "app/patients/[userId]/register/error.tsx": 1,
   "components/admin/AppointmentFilters.tsx": 3,
   "components/states/Skeletons.tsx": 1,
   "components/table/columns.tsx": 4,
