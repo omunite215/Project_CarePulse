@@ -54,21 +54,22 @@ export function FormSkeleton({ fields = 3 }: { fields?: number }) {
 export function RegisterFormSkeleton() {
   return (
     <Busy label="Loading registration form">
-      <div className="space-y-10">
+      <div className="space-y-12">
         <div className="space-y-3">
           <Skeleton className="h-9 w-44" />
           <Skeleton className="h-5 w-72" />
         </div>
 
         {["Personal", "Medical", "Identification"].map((section) => (
-          <section key={section} className="space-y-5">
-            <Skeleton className="h-6 w-40" />
-            <div className="grid gap-5 sm:grid-cols-2">
-              <FieldSkeleton />
-              <FieldSkeleton />
-              <FieldSkeleton />
-              <FieldSkeleton />
-            </div>
+          <section
+            key={section}
+            className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3"
+          >
+            <Skeleton className="col-span-full h-6 w-40" />
+            <FieldSkeleton />
+            <FieldSkeleton />
+            <FieldSkeleton />
+            <FieldSkeleton />
           </section>
         ))}
       </div>

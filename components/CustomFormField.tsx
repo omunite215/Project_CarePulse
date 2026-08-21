@@ -25,7 +25,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/fields/DateField";
 import { SelectField } from "@/components/fields/SelectField";
 import { FormFieldType } from "@/components/forms/field-types";
-import { cn } from "@/lib/utils";
 
 /**
  * The form field renderer.
@@ -240,7 +239,9 @@ export default function CustomFormField<T extends FieldValues>(
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className={cn("flex-1", className)}>
+        // No default width class: fields are grid children now, and a
+        // leftover `flex-1` would fight an explicit col-span.
+        <FormItem className={className}>
           {/* A checkbox is labelled inline, so a heading above it would be a
               second label for the same control. */}
           {label && fieldType !== FormFieldType.CHECKBOX ? (

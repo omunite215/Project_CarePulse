@@ -193,7 +193,7 @@ export default function AppointmentForm({
             />
 
             {type === "create" ? (
-              <div className="flex flex-col gap-6 xl:flex-row">
+              <div className="grid gap-6 md:grid-cols-2">
                 <CustomFormField
                   fieldType={FormFieldType.TEXTAREA}
                   control={form.control}
