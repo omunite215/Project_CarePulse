@@ -25,7 +25,6 @@ export default async function Home({
 
       <AuthShell
         image={{ src: "/assets/images/onboarding-img.png", alt: "" }}
-        imageClassName="max-w-[50%]"
         footerSlot={
           <Link
             href="/?admin=true"

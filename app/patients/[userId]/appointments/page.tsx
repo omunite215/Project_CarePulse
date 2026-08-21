@@ -38,7 +38,6 @@ export default async function MyAppointmentsPage({
   return (
     <AuthShell
       image={{ src: "/assets/images/appointment-img.png", alt: "" }}
-      imageClassName="max-w-[390px]"
       footerSlot={
         <Link
           href={`/patients/${userId}/new-appointment`}

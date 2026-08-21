@@ -8,7 +8,7 @@ import { AuthShell } from "@/components/layout/AuthShell";
  */
 export default function Loading() {
   return (
-    <AuthShell image={{ src: "/assets/images/onboarding-img.png", alt: "" }} imageClassName="max-w-[50%]">
+    <AuthShell image={{ src: "/assets/images/onboarding-img.png", alt: "" }}>
       <FormSkeleton fields={3} />
     </AuthShell>
   );

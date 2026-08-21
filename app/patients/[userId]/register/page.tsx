@@ -39,11 +39,7 @@ export default async function RegisterPage({
   }
 
   return (
-    <AuthShell
-      image={{ src: "/assets/images/register-img.png", alt: "" }}
-      imageClassName="max-w-[390px]"
-      containerClassName="flex-1"
-    >
+    <AuthShell image={{ src: "/assets/images/register-img.png", alt: "" }}>
       <main id="main">
         <RegisterForm user={userResult.data} />
       </main>

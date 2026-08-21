@@ -4,10 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
-    <AuthShell
-      image={{ src: "/assets/images/appointment-img.png", alt: "" }}
-      imageClassName="max-w-[390px]"
-    >
+    <AuthShell image={{ src: "/assets/images/appointment-img.png", alt: "" }}>
       <div className="space-y-10">
         <div className="space-y-2">
           <Skeleton className="h-9 w-64" />
