@@ -1,33 +1,44 @@
-import PatientForm from "@/components/forms/PatientForm";
-import Image from "next/image";
 import Link from "next/link";
 
-export default function Home() {
-  return (
-    <div className="flex h-screen max-h-screen">
-      {/* TODO: OTP Verification */}
-      <section className="remove-scrollbar container my-auto">
-        <div className="sub-container max-w-[496px]">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={1000}
-            width={1000}
-            alt="patient"
-            className="mb-12 h-10 w-fit"
-          />
-          <PatientForm />
-          <div className="text-14-regular mt-20 flex justify-between">
-            <p className="justify-items-end text-dark-600 xl:text-left">
-              © 2024 CarePulse
-            </p>
-            <Link href="/?admin=true" className="text-green-500 hover:underline">
-              Admin
-            </Link>
-          </div>
-        </div>
-      </section>
+import PatientForm from "@/components/forms/PatientForm";
+import { PasskeyModal } from "@/components/PasskeyModal";
+import { AuthShell } from "@/components/layout/AuthShell";
 
-      <Image src="/assets/images/onboarding-img.png" height={1000} width={1000} alt="patient" className="side-img max-w-[50%]" />
-    </div>
+/**
+ * Onboarding.
+ *
+ * `searchParams` is a Promise in Next 16 and must be awaited. The original page
+ * accepted no props at all, which is why its own `/?admin=true` footer link was
+ * a dead end — nothing ever read the flag.
+ */
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ admin?: string }>;
+}) {
+  const { admin } = await searchParams;
+  const isAdminRequest = admin === "true";
+
+  return (
+    <>
+      {isAdminRequest ? <PasskeyModal /> : null}
+
+      <AuthShell
+        image={{ src: "/assets/images/onboarding-img.png", alt: "" }}
+        imageClassName="max-w-[50%]"
+        footerSlot={
+          <Link
+            href="/?admin=true"
+            className="text-14-medium text-brand hover:underline"
+          >
+            Admin
+          </Link>
+        }
+      >
+        <main id="main">
+          <PatientForm />
+        </main>
+      </AuthShell>
+    </>
   );
 }

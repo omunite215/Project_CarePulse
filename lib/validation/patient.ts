@@ -1,0 +1,106 @@
+import { z } from "zod";
+
+import { GENDERS } from "@/lib/data/types";
+import {
+  consentSchema,
+  emailSchema,
+  personNameSchema,
+  phoneSchema,
+} from "./primitives";
+
+/**
+ * The full registration form.
+ *
+ * Gender is lowercase to match the Appwrite enum attribute. The original schema
+ * used capitalised `["Male","Female","Other"]` while the reference backend
+ * stored lowercase, which would have failed on write.
+ */
+export const PatientFormValidation = z.object({
+  // Personal
+  name: personNameSchema,
+  email: emailSchema,
+  phone: phoneSchema,
+  // `z.date()` rather than `z.coerce.date()`: the value is handed to a Server
+  // Action, and Next's action serialiser preserves Date. Coercing would widen
+  // the schema's *input* type to `unknown`, which then refuses to line up with
+  // react-hook-form's generics.
+  birthDate: z
+    .date({ error: "Date of birth is required" })
+    .refine((date) => date <= new Date(), {
+      error: "Date of birth cannot be in the future",
+    }),
+  gender: z.enum(GENDERS, { error: "Select a gender" }),
+  address: z
+    .string()
+    .trim()
+    .min(5, { error: "Address must be at least 5 characters" })
+    .max(500, { error: "Address must be at most 500 characters" }),
+  occupation: z
+    .string()
+    .trim()
+    .min(2, { error: "Occupation must be at least 2 characters" })
+    .max(500, { error: "Occupation must be at most 500 characters" }),
+  emergencyContactName: personNameSchema,
+  emergencyContactNumber: phoneSchema,
+
+  // Medical
+  primaryPhysician: z.string().min(2, { error: "Select a doctor" }),
+  insuranceProvider: z
+    .string()
+    .trim()
+    .min(2, { error: "Insurance name must be at least 2 characters" })
+    .max(50, { error: "Insurance name must be at most 50 characters" }),
+  insurancePolicyNumber: z
+    .string()
+    .trim()
+    .min(2, { error: "Policy number must be at least 2 characters" })
+    .max(50, { error: "Policy number must be at most 50 characters" }),
+  allergies: z.string().max(500).optional(),
+  currentMedication: z.string().max(500).optional(),
+  familyMedicalHistory: z.string().max(500).optional(),
+  pastMedicalHistory: z.string().max(500).optional(),
+
+  // Identification
+  identificationType: z.string().optional(),
+  identificationNumber: z.string().max(50).optional(),
+  identificationDocument: z.custom<File[]>().optional(),
+
+  // Consent
+  treatmentConsent: consentSchema(
+    "You must consent to treatment in order to proceed",
+  ),
+  disclosureConsent: consentSchema(
+    "You must consent to disclosure in order to proceed",
+  ),
+  privacyConsent: consentSchema(
+    "You must consent to privacy in order to proceed",
+  ),
+});
+
+export type PatientFormValues = z.infer<typeof PatientFormValidation>;
+
+/** Field defaults for the register form. Consents start unticked by design. */
+export const PatientFormDefaultValues: PatientFormValues = {
+  name: "",
+  email: "",
+  phone: "",
+  birthDate: new Date(Date.now()),
+  gender: "male",
+  address: "",
+  occupation: "",
+  emergencyContactName: "",
+  emergencyContactNumber: "",
+  primaryPhysician: "",
+  insuranceProvider: "",
+  insurancePolicyNumber: "",
+  allergies: "",
+  currentMedication: "",
+  familyMedicalHistory: "",
+  pastMedicalHistory: "",
+  identificationType: "Birth Certificate",
+  identificationNumber: "",
+  identificationDocument: [],
+  treatmentConsent: false,
+  disclosureConsent: false,
+  privacyConsent: false,
+};

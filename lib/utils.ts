@@ -1,78 +1,108 @@
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * The project's custom typography utilities (`text-14-medium`, `text-32-bold`, …)
+ * each set font-size, line-height AND font-weight at once. tailwind-merge has no
+ * idea they exist, so out of the box it would never dedupe them against
+ * `text-lg` / `leading-6` / `font-bold`.
+ *
+ * Registering them as their own group — mutually conflicting with the three
+ * built-in groups they overlap — makes `cn("text-14-regular", "text-lg")`
+ * resolve to `text-lg` instead of emitting both and letting source order decide.
+ */
+const TYPOGRAPHY_UTILITIES = [
+  "text-36-bold",
+  "text-32-bold",
+  "text-24-bold",
+  "text-18-bold",
+  "text-16-semibold",
+  "text-16-regular",
+  "text-14-medium",
+  "text-14-regular",
+  "text-12-semibold",
+  "text-12-regular",
+] as const;
+
+// The generic registers "cp-type" as a valid class-group id; without it
+// tailwind-merge's config type only accepts its own built-in group names.
+const twMerge = extendTailwindMerge<"cp-type">({
+  extend: {
+    classGroups: {
+      "cp-type": [...TYPOGRAPHY_UTILITIES],
+    },
+    conflictingClassGroups: {
+      "cp-type": ["font-size", "leading", "font-weight"],
+      "font-size": ["cp-type"],
+      leading: ["cp-type"],
+      "font-weight": ["cp-type"],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs));
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export const parseStringify = (value: any) => JSON.parse(JSON.stringify(value));
+/** Formats a date into the four shapes the UI needs. */
+export function formatDateTime(date: Date | string, timeZone?: string) {
+  const value = typeof date === "string" ? new Date(date) : date;
 
-export const convertFileToUrl = (file: File) => URL.createObjectURL(file);
+  if (Number.isNaN(value.getTime())) {
+    return { dateTime: "—", dateDay: "—", dateOnly: "—", timeOnly: "—" };
+  }
 
-// FORMAT DATE TIME
-export const formatDateTime = (dateString: Date | string) => {
-	const dateTimeOptions: Intl.DateTimeFormatOptions = {
-		// weekday: "short", // abbreviated weekday name (e.g., 'Mon')
-		month: "short", // abbreviated month name (e.g., 'Oct')
-		day: "numeric", // numeric day of the month (e.g., '25')
-		year: "numeric", // numeric year (e.g., '2023')
-		hour: "numeric", // numeric hour (e.g., '8')
-		minute: "numeric", // numeric minute (e.g., '30')
-		hour12: true, // use 12-hour clock (true) or 24-hour clock (false)
-	};
+  const base: Intl.DateTimeFormatOptions = timeZone ? { timeZone } : {};
 
-	const dateDayOptions: Intl.DateTimeFormatOptions = {
-		weekday: "short", // abbreviated weekday name (e.g., 'Mon')
-		year: "numeric", // numeric year (e.g., '2023')
-		month: "2-digit", // abbreviated month name (e.g., 'Oct')
-		day: "2-digit", // numeric day of the month (e.g., '25')
-	};
-
-	const dateOptions: Intl.DateTimeFormatOptions = {
-		month: "short", // abbreviated month name (e.g., 'Oct')
-		year: "numeric", // numeric year (e.g., '2023')
-		day: "numeric", // numeric day of the month (e.g., '25')
-	};
-
-	const timeOptions: Intl.DateTimeFormatOptions = {
-		hour: "numeric", // numeric hour (e.g., '8')
-		minute: "numeric", // numeric minute (e.g., '30')
-		hour12: true, // use 12-hour clock (true) or 24-hour clock (false)
-	};
-
-	const formattedDateTime: string = new Date(dateString).toLocaleString(
-		"en-US",
-		dateTimeOptions,
-	);
-
-	const formattedDateDay: string = new Date(dateString).toLocaleString(
-		"en-US",
-		dateDayOptions,
-	);
-
-	const formattedDate: string = new Date(dateString).toLocaleString(
-		"en-US",
-		dateOptions,
-	);
-
-	const formattedTime: string = new Date(dateString).toLocaleString(
-		"en-US",
-		timeOptions,
-	);
-
-	return {
-		dateTime: formattedDateTime,
-		dateDay: formattedDateDay,
-		dateOnly: formattedDate,
-		timeOnly: formattedTime,
-	};
-};
-
-export function encryptKey(passkey: string) {
-	return btoa(passkey);
+  return {
+    dateTime: value.toLocaleString("en-US", {
+      ...base,
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    }),
+    dateDay: value.toLocaleString("en-US", {
+      ...base,
+      weekday: "short",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }),
+    dateOnly: value.toLocaleString("en-US", {
+      ...base,
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    timeOnly: value.toLocaleString("en-US", {
+      ...base,
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    }),
+  };
 }
 
-export function decryptKey(passkey: string) {
-	return atob(passkey);
+/** Browser-only: object URL for previewing a picked file. */
+export function convertFileToUrl(file: File) {
+  return URL.createObjectURL(file);
+}
+
+/** Bytes → human readable, for file-upload validation messages. */
+export function formatBytes(bytes: number) {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+/** Stable sleep used by the demo repository to make latency look real. */
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

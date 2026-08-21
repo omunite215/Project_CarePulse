@@ -1,0 +1,316 @@
+<mxfile host="app.diagrams.net" agent="CarePulse" version="24.7.17">
+  <diagram id="carepulse-architecture" name="CarePulse Architecture">
+    <mxGraphModel dx="1600" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1650" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ============================== TITLE ============================== -->
+        <mxCell id="title" value="CarePulse — System Architecture" style="text;html=1;fontSize=26;fontStyle=1;fontColor=#0D0F10;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="700" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Next.js 16 App Router · React 19 · TypeScript · Appwrite or seeded fixtures" style="text;html=1;fontSize=13;fontColor=#5B6670;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="760" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ============================ LANE 1 ============================ -->
+        <mxCell id="lane1" value="1 · Browser (client components)" style="swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fillColor=#F6F7F8;strokeColor=#C9CED3;fontSize=13;fontStyle=1;fontColor=#0D0F10;swimlaneFillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="1570" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c-patientform" value="PatientForm&#xa;name · email · phone" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="24" width="150" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="c-registerform" value="RegisterForm&#xa;4 sections · 23 fields" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="230" y="24" width="150" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="c-apptform" value="AppointmentForm&#xa;create · schedule · cancel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="400" y="24" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="c-passkey" value="PasskeyModal&#xa;6-digit OTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7F0FA;strokeColor=#1C5B98;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="580" y="24" width="130" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="c-datatable" value="DataTable + StatCards&#xa;TanStack Table v9" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7F0FA;strokeColor=#1C5B98;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="730" y="24" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="c-datefield" value="DateField&#xa;calendar + slot grid" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="910" y="24" width="150" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c-providers" value="Providers — ThemeProvider (next-themes) · QueryClientProvider (TanStack Query 5) · LazyMotion (motion) · Toaster (sonner) · NuqsAdapter (URL state)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFF2;strokeColor=#9AA2AA;fontSize=11;dashed=1;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="96" width="1000" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c-xior" value="xior HTTP client&#xa;retry · dedupe · AppError" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4E5;strokeColor=#C77700;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="1090" y="24" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="c-query" value="TanStack Query&#xa;polling · cache · invalidation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4E5;strokeColor=#C77700;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="1090" y="96" width="160" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ============================ LANE 2 ============================ -->
+        <mxCell id="lane2" value="2 · Next.js 16 App Router (server-rendered)" style="swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fillColor=#F6F7F8;strokeColor=#C9CED3;fontSize=13;fontStyle=1;fontColor=#0D0F10;swimlaneFillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="272" width="1570" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-proxy" value="proxy.ts&#xa;(was middleware.ts)&#xa;guards /admin + /api/v1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEA;strokeColor=#B3261E;fontSize=11;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="24" width="150" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-routes" value="Route segments — each with page · loading · error&#xa;&#xa;/  →  /patients/[userId]/register  →  /new-appointment  →  /success&#xa;/patients/[userId]/appointments        /admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;align=left;spacingLeft=12;verticalAlign=middle;" vertex="1" parent="lane2">
+          <mxGeometry x="230" y="24" width="470" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-boundaries" value="not-found.tsx · global-error.tsx · skeletons · &lt;Suspense&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEA;strokeColor=#B3261E;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="230" y="100" width="470" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-api" value="Route handlers · app/api/v1/* (GET only)&#xa;appointments · appointments/stats · availability · files/[id]&#xa;+ /api/health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4E5;strokeColor=#C77700;fontSize=11;align=left;spacingLeft=12;" vertex="1" parent="lane2">
+          <mxGeometry x="720" y="24" width="340" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-hydration" value="RSC seeds the query cache&#xa;HydrationBoundary → zero fetches on first paint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7F0FA;strokeColor=#1C5B98;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="720" y="100" width="340" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-auth" value="lib/auth&#xa;jose JWT (edge-safe)&#xa;httpOnly cookie · 8h&#xa;rate limit 5 / 10 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEA;strokeColor=#B3261E;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1090" y="24" width="160" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-env" value="lib/env.ts&#xa;Zod-validated, fails fast&#xa;picks the data source" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFF2;strokeColor=#9AA2AA;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1280" y="24" width="170" height="76" as="geometry" />
+        </mxCell>
+
+        <!-- ============================ LANE 3 ============================ -->
+        <mxCell id="lane3" value="3 · Server Actions (&quot;use server&quot;)" style="swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fillColor=#F6F7F8;strokeColor=#C9CED3;fontSize=13;fontStyle=1;fontColor=#0D0F10;swimlaneFillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="484" width="1570" height="176" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a-patient" value="patient.actions&#xa;createUser · getUser&#xa;getPatient · registerPatient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="20" width="180" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="a-appt" value="appointment.actions&#xa;create · update · list&#xa;getAvailability" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="260" y="20" width="180" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="a-admin" value="admin.actions&#xa;verifyAdminPasskey&#xa;timingSafeEqual" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEA;strokeColor=#B3261E;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="460" y="20" width="170" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a-zod" value="Zod 4 re-validation&#xa;a Server Action is a public endpoint,&#xa;so client validation is only a courtesy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEE8FB;strokeColor=#6E56CF;fontSize=11;fontStyle=1;" vertex="1" parent="lane3">
+          <mxGeometry x="670" y="20" width="230" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a-slot" value="Slot re-check&#xa;closes the double-booking race" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEE8FB;strokeColor=#6E56CF;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="670" y="98" width="230" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a-result" value="ActionResult&lt;T&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D0F10;fontSize=12;fontStyle=1;" vertex="1" parent="lane3">
+          <mxGeometry x="940" y="42" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="a-ok" value="{ ok: true, data }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="1150" y="16" width="180" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="a-err" value="{ ok: false, error{ code, message, fieldErrors } }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEA;strokeColor=#B3261E;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="1150" y="72" width="180" height="46" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a-notify" value="services/notifications&#xa;SMS copy · best-effort send" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4E5;strokeColor=#C77700;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="1360" y="42" width="170" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ============================ LANE 4 ============================ -->
+        <mxCell id="lane4" value="4 · Repository adapter — the seam" style="swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fillColor=#F6F7F8;strokeColor=#C9CED3;fontSize=13;fontStyle=1;fontColor=#0D0F10;swimlaneFillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="672" width="1570" height="196" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d-interface" value="DataRepository (interface)&#xa;createUser · getUser · registerPatient · getPatientByUserId&#xa;createAppointment · updateAppointment · listAppointments&#xa;getBookedSlots · uploadIdentificationDocument" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D0F10;fontSize=11;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="lane4">
+          <mxGeometry x="60" y="30" width="330" height="86" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d-decision" value="DEMO_MODE?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF4E5;strokeColor=#C77700;fontSize=12;fontStyle=1;" vertex="1" parent="lane4">
+          <mxGeometry x="450" y="42" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d-demo" value="demo/ — seeded fixtures&#xa;mulberry32 PRNG (seed 42)&#xa;globalThis in-memory store&#xa;structuredClone on read&#xa;8 scheduled / 6 pending / 3 cancelled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFF2;strokeColor=#9AA2AA;fontSize=11;dashed=1;align=left;spacingLeft=12;" vertex="1" parent="lane4">
+          <mxGeometry x="690" y="10" width="290" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d-appwrite" value="appwrite/ — live backend&#xa;client · mappers · repository&#xa;Document ⇄ domain model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE7F0;strokeColor=#FD366E;fontSize=11;align=left;spacingLeft=12;" vertex="1" parent="lane4">
+          <mxGeometry x="690" y="100" width="290" height="62" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d-note" value="Both implementations satisfy one contract,&#xa;and one Vitest suite runs against both.&#xa;That is what lets the app boot with no backend —&#xa;which is what makes the screenshots and E2E possible." style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontSize=11;fontColor=#5B6670;align=left;" vertex="1" parent="lane4">
+          <mxGeometry x="1030" y="34" width="330" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ============================ LANE 5 ============================ -->
+        <mxCell id="lane5" value="5 · External services" style="swimlane;horizontal=0;startSize=40;html=1;whiteSpace=wrap;fillColor=#F6F7F8;strokeColor=#C9CED3;fontSize=13;fontStyle=1;fontColor=#0D0F10;swimlaneFillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="880" width="1570" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-appwrite" value="Appwrite (server SDK v28 · targets Appwrite 1.9.x)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE7F0;strokeColor=#FD366E;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=8;" vertex="1" parent="lane5">
+          <mxGeometry x="60" y="20" width="640" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e-users" value="Users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FD366E;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="80" y="52" width="140" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="e-db" value="Databases&#xa;patient · appointment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FD366E;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="235" y="52" width="150" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="e-storage" value="Storage&#xa;ID documents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FD366E;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="400" y="52" width="140" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="e-messaging" value="Messaging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FD366E;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="555" y="52" width="130" height="46" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-twilio" value="Twilio&#xa;SMS provider, configured&#xa;inside Appwrite — not a&#xa;dependency of this codebase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEA;strokeColor=#F22F46;fontSize=11;" vertex="1" parent="lane5">
+          <mxGeometry x="730" y="30" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-none" value="Demo mode reaches nothing external.&#xa;SMS is written to an in-memory outbox&#xa;and files are served from /api/v1/files/[id]." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEFF2;strokeColor=#9AA2AA;fontSize=11;dashed=1;" vertex="1" parent="lane5">
+          <mxGeometry x="980" y="30" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ============================ FLOW EDGES ============================ -->
+        <mxCell id="f1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#24AE7C;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="c-patientform" target="a-patient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f1l" value="1 submit intake" style="edgeLabel;html=1;fontSize=10;fontColor=#12704F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f1">
+          <mxGeometry x="-0.93" relative="1" as="geometry"><mxPoint x="-6" y="-2" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#24AE7C;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="c-registerform" target="a-patient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2l" value="2 register + upload" style="edgeLabel;html=1;fontSize=10;fontColor=#12704F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f2">
+          <mxGeometry x="-0.93" relative="1" as="geometry"><mxPoint x="52" y="-2" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#24AE7C;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="c-apptform" target="a-appt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3l" value="3 book" style="edgeLabel;html=1;fontSize=10;fontColor=#12704F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f3">
+          <mxGeometry x="-0.93" relative="1" as="geometry"><mxPoint x="26" y="-2" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C5B98;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="c-passkey" target="a-admin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4l" value="4 passkey" style="edgeLabel;html=1;fontSize=10;fontColor=#1C5B98;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f4">
+          <mxGeometry x="-0.93" relative="1" as="geometry"><mxPoint x="30" y="-2" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C77700;strokeWidth=2;endArrow=blockThin;endFill=1;dashed=1;" edge="1" parent="1" source="c-xior" target="r-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f5l" value="5 GET reads&#xa;polling · filters · pagination" style="edgeLabel;html=1;fontSize=10;fontColor=#C77700;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f5">
+          <mxGeometry x="0.55" relative="1" as="geometry"><mxPoint y="-18" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6E56CF;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="a-zod" target="a-result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#24AE7C;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="a-result" target="a-ok">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B3261E;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="a-result" target="a-err">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B3261E;strokeWidth=2;endArrow=blockThin;endFill=1;dashed=1;exitX=1;exitY=0.5;entryX=1;entryY=1;" edge="1" parent="1" source="a-err" target="c-datefield">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1580" y="600" />
+              <mxPoint x="1580" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f9l" value="fieldErrors → setError&#xa;(errors land on the offending input)" style="edgeLabel;html=1;fontSize=10;fontColor=#B3261E;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f9">
+          <mxGeometry x="0.1" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0D0F10;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="a-patient" target="d-interface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f10l" value="6 repository call" style="edgeLabel;html=1;fontSize=10;fontColor=#0D0F10;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f10">
+          <mxGeometry x="0.35" relative="1" as="geometry"><mxPoint x="-46" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0D0F10;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="a-appt" target="d-interface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0D0F10;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="d-interface" target="d-decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f13" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9AA2AA;strokeWidth=2;endArrow=blockThin;endFill=1;dashed=1;fontSize=10;fontColor=#5B6670;" edge="1" parent="1" source="d-decision" target="d-demo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f14" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#FD366E;strokeWidth=2;endArrow=blockThin;endFill=1;fontSize=10;fontColor=#B3266E;" edge="1" parent="1" source="d-decision" target="d-appwrite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f15" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#FD366E;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="d-appwrite" target="e-appwrite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f15l" value="7 SDK" style="edgeLabel;html=1;fontSize=10;fontColor=#B3266E;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f15">
+          <mxGeometry x="-0.2" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f16" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#F22F46;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="e-messaging" target="e-twilio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f16l" value="8 SMS" style="edgeLabel;html=1;fontSize=10;fontColor=#B3261E;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f16">
+          <mxGeometry x="-0.2" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f17" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C77700;strokeWidth=2;endArrow=blockThin;endFill=1;dashed=1;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="a-notify" target="e-messaging">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1490" y="800" /><mxPoint x="820" y="800" /><mxPoint x="820" y="962" /></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f18" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B3261E;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r-proxy" target="r-routes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f19" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C5B98;strokeWidth=2;endArrow=blockThin;endFill=1;dashed=1;" edge="1" parent="1" source="r-hydration" target="c-datatable">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f19l" value="9 hydrate (no fetch)" style="edgeLabel;html=1;fontSize=10;fontColor=#1C5B98;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="f19">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint x="-52" as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="f20" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0D0F10;strokeWidth=2;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="r-api" target="d-interface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============================== LEGEND ============================== -->
+        <mxCell id="legend" value="Legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C9CED3;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="1046" width="320" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="lg1" value="solid green — patient happy path" style="text;html=1;fontSize=10;fontColor=#12704F;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1068" width="300" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2" value="dashed red — error path back to the form" style="text;html=1;fontSize=10;fontColor=#B3261E;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1086" width="300" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg3" value="dashed grey — demo mode (no backend)" style="text;html=1;fontSize=10;fontColor=#5B6670;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1104" width="300" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg4" value="dashed amber — client reads via xior + TanStack Query" style="text;html=1;fontSize=10;fontColor=#C77700;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1122" width="300" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note-writes" value="Writes are Server Actions only. app/api/v1/* is a GET-only read projection,&#xa;so there is exactly one write path and no second source of truth." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF5;strokeColor=#C77700;fontSize=11;fontColor=#5B4300;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1046" width="480" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note-security" value="Admin auth is server-side: the passkey never reaches the browser, is compared&#xa;with timingSafeEqual, and is exchanged for a signed httpOnly cookie.&#xa;proxy.ts guards navigation; every route handler re-checks for itself." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7F6;strokeColor=#B3261E;fontSize=11;fontColor=#7A1C16;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1046" width="710" height="52" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

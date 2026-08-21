@@ -1,0 +1,139 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
+/**
+ * Skeleton set.
+ *
+ * Each mirrors the shape of what it replaces, so the swap to real content does
+ * not shift the layout. The wrappers carry `aria-busy` and a visually-hidden
+ * status line, because a screen reader gets nothing useful from a pile of empty
+ * divs.
+ */
+
+function Busy({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      <span className="sr-only">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+/** One labelled input. */
+export function FieldSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <Skeleton className="mb-2 h-4 w-24" />
+      <Skeleton className="h-11 w-full" />
+    </div>
+  );
+}
+
+export function FormSkeleton({ fields = 3 }: { fields?: number }) {
+  return (
+    <Busy label="Loading form">
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-52" />
+        <Skeleton className="h-5 w-64" />
+        <div className="space-y-5 pt-6">
+          {Array.from({ length: fields }, (_, i) => (
+            <FieldSkeleton key={i} />
+          ))}
+        </div>
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </Busy>
+  );
+}
+
+export function RegisterFormSkeleton() {
+  return (
+    <Busy label="Loading registration form">
+      <div className="space-y-10">
+        <div className="space-y-3">
+          <Skeleton className="h-9 w-44" />
+          <Skeleton className="h-5 w-72" />
+        </div>
+
+        {["Personal", "Medical", "Identification"].map((section) => (
+          <section key={section} className="space-y-5">
+            <Skeleton className="h-6 w-40" />
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FieldSkeleton />
+              <FieldSkeleton />
+              <FieldSkeleton />
+              <FieldSkeleton />
+            </div>
+          </section>
+        ))}
+      </div>
+    </Busy>
+  );
+}
+
+export function StatCardsSkeleton() {
+  return (
+    <Busy label="Loading appointment counts">
+      <div className="admin-stat">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} className="h-[130px] flex-1 rounded-2xl" />
+        ))}
+      </div>
+    </Busy>
+  );
+}
+
+export function DataTableSkeleton({ rows = 8 }: { rows?: number }) {
+  return (
+    <Busy label="Loading appointments">
+      <div className="data-table">
+        <Skeleton className="h-12 w-full rounded-none" />
+        <div className="divide-y divide-border">
+          {Array.from({ length: rows }, (_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4">
+              <Skeleton className="h-4 w-6" />
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-7 w-28 rounded-full" />
+              <Skeleton className="h-4 w-40" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-8 rounded-full" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+              <Skeleton className="ml-auto h-8 w-40" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Busy>
+  );
+}
+
+export function AppointmentListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <Busy label="Loading your appointments">
+      <div className="space-y-4">
+        {Array.from({ length: rows }, (_, i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-xl" />
+        ))}
+      </div>
+    </Busy>
+  );
+}
+
+export function SuccessSkeleton() {
+  return (
+    <Busy label="Loading appointment details">
+      <div className="flex flex-col items-center gap-8 py-10">
+        <Skeleton className="size-40 rounded-full" />
+        <Skeleton className="h-8 w-80" />
+        <Skeleton className="h-5 w-64" />
+        <Skeleton className="h-24 w-full max-w-md rounded-xl" />
+      </div>
+    </Busy>
+  );
+}

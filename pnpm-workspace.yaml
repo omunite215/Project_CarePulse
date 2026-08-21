@@ -1,0 +1,8 @@
+minimumReleaseAgeExclude:
+  - '@vitejs/plugin-react@6.1.0'
+  - framer-motion@13.1.1
+  - motion-dom@13.1.1
+  - motion@13.1.1
+  - nuqs@2.10.0
+  - react-dropzone@20.1.1
+  - react-phone-number-input@3.4.18

@@ -1,0 +1,110 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "nextjs",
+    "jsx-a11y",
+    "import",
+    "promise"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "pedantic": "off",
+    "style": "off"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "settings": {
+    "react": {
+      "version": "19.2"
+    }
+  },
+  "rules": {
+    "react/exhaustive-deps": "error",
+    "react/rules-of-hooks": "error",
+    // Next.js uses the automatic JSX runtime; React is never in scope.
+    "react/react-in-jsx-scope": "off",
+    // Side-effect CSS imports are legitimate.
+    "import/no-unassigned-import": "off",
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "error",
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "no-unused-vars": "off",
+    "typescript/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "unicorn/no-null": "off",
+    "import/no-cycle": "error",
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-is-valid": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/label-has-associated-control": "warn",
+
+    // Downgraded, not silenced. The remaining hits are cases where the rule's
+    // advice is wrong for the pattern:
+    //  - <button role="radio"> inside role="radiogroup" is the documented ARIA
+    //    APG segmented-control pattern (ThemeToggle); swapping in real radio
+    //    inputs would not improve the semantics.
+    //  - role="group" on the time-slot grid is correct; <fieldset> is the only
+    //    suggested alternative and carries layout baggage.
+    "jsx-a11y/prefer-tag-over-role": "warn",
+
+    // Autofocus is correct when focus must move INTO a just-opened dialog or
+    // popover (PasskeyModal, the calendar). Radix owns the focus trap; leaving
+    // focus behind on the trigger is the worse outcome for keyboard users.
+    "jsx-a11y/no-autofocus": "warn",
+
+    // React Compiler diagnostics. These fire on two legitimate patterns:
+    //  - reading a browser-only value on mount, because it cannot be read
+    //    during SSR without a hydration mismatch (OfflineBanner, ThemeToggle);
+    //  - syncing a debounced local input to URL state (AppointmentFilters).
+    "react/set-state-in-effect": "warn",
+
+    // Fires on react-hook-form's `watch`, which is its documented API.
+    "react/incompatible-library": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "scripts/**"],
+      "rules": {
+        "no-console": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["lib/data/demo/**", "lib/env.ts", "instrumentation.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      // Vendored shadcn/ui primitives. We own the domain code, not the
+      // generator's stylistic choices.
+      "files": ["components/ui/**"],
+      "rules": {
+        "react/jsx-no-constructed-context-values": "off",
+        "typescript/consistent-type-imports": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules/**",
+    ".next/**",
+    "out/**",
+    "public/**",
+    "docs/**",
+    "next-env.d.ts",
+    "pnpm-lock.yaml"
+  ]
+}

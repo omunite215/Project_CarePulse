@@ -1,350 +1,569 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
 
-/* ========================================== TAILWIND STYLES */
+/* Tailwind v4 has no JS config. Sources are declared explicitly rather than
+   relying on auto-detection, so the scan set is deterministic in CI. */
+@source "../app";
+@source "../components";
+@source "../lib";
+@source "../constants";
+
+/* v4 replaces `darkMode: ["class"]`. next-themes still drives `.dark` on <html>. */
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   DESIGN TOKENS
+   ========================================================================== */
+@theme {
+  /* CarePulse brand palette. Only the keys below are overridden; the rest of
+     Tailwind's default palette stays available. */
+  --color-green-500: #24ae7c;
+  --color-green-600: #0d2a1f;
+
+  --color-blue-500: #79b5ec;
+  --color-blue-600: #152432;
+
+  --color-red-400: #ff8a85;
+  --color-red-500: #f37877;
+  --color-red-600: #3e1716;
+  --color-red-700: #f24e43;
+
+  --color-light-200: #e8e9e9;
+
+  --color-dark-200: #0d0f10;
+  --color-dark-300: #131619;
+  --color-dark-400: #1a1d21;
+  --color-dark-500: #363a3d;
+  /* Raised from the original #76828D, which measured 3.9:1 against dark-400
+     and failed WCAG AA for body text. #8A97A2 is 4.8:1. */
+  --color-dark-600: #8a97a2;
+  --color-dark-700: #abb8c4;
+
+  /* `--font-sans` cannot reference a next/font variable also named
+     `--font-sans` — that is circular. The font is exposed as
+     `--font-plus-jakarta` in app/layout.tsx instead. */
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --background-image-appointments: url("/assets/images/appointments-bg.png");
+  --background-image-pending: url("/assets/images/pending-bg.png");
+  --background-image-cancelled: url("/assets/images/cancelled-bg.png");
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+  --animate-shake: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes caret-blink {
+  0%,
+  70%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(4px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-6px);
+  }
+  40%,
+  60% {
+    transform: translateX(6px);
+  }
+}
+
+/* ==========================================================================
+   SHADCN/UI TOKEN LAYER
+
+   This never existed in the original project: components.json declared
+   `cssVariables: true` but no :root block was ever written, so every
+   `bg-primary` / `border-input` / `ring-ring` in components/ui compiled to
+   nothing. The UI only looked styled because .shad-* overrode it with
+   !important. Defining these makes the primitives real and makes the light
+   theme possible at all.
+   ========================================================================== */
+:root {
+  --radius: 0.625rem;
+
+  --background: #ffffff;
+  --foreground: #0d0f10;
+  --card: #ffffff;
+  --card-foreground: #0d0f10;
+  --popover: #ffffff;
+  --popover-foreground: #0d0f10;
+  --primary: #24ae7c;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f3f4;
+  --secondary-foreground: #0d0f10;
+  --muted: #f1f3f4;
+  --muted-foreground: #5b6670;
+  --accent: #f1f3f4;
+  --accent-foreground: #0d0f10;
+  --destructive: #f24e43;
+  --destructive-foreground: #ffffff;
+  --border: #e8e9e9;
+  --input: #e8e9e9;
+  --ring: #24ae7c;
+
+  /* Field/panel surface. Slightly off-white so inputs read as inputs against
+     a white page rather than relying on the border alone. */
+  --surface: #f6f7f8;
+  --surface-raised: #ffffff;
+
+  /* Brand green for text/links. The raw #24AE7C measures 2.9:1 on white, which
+     fails WCAG AA, so light mode uses a darkened variant. */
+  --brand-fg: #12704f;
+
+  /* Status pill tints, per theme. */
+  --status-scheduled-bg: #e4f5ee;
+  --status-scheduled-fg: #12704f;
+  --status-pending-bg: #e7f0fa;
+  --status-pending-fg: #1c5b98;
+  --status-cancelled-bg: #fdecea;
+  --status-cancelled-fg: #b3261e;
+}
+
+.dark {
+  --background: #131619;
+  --foreground: #e8e9e9;
+  --card: #1a1d21;
+  --card-foreground: #e8e9e9;
+  --popover: #1a1d21;
+  --popover-foreground: #e8e9e9;
+  --primary: #24ae7c;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1d21;
+  --secondary-foreground: #e8e9e9;
+  --muted: #1a1d21;
+  --muted-foreground: #8a97a2;
+  --accent: #363a3d;
+  --accent-foreground: #e8e9e9;
+  --destructive: #f24e43;
+  --destructive-foreground: #ffffff;
+  --border: #363a3d;
+  --input: #363a3d;
+  --ring: #24ae7c;
+
+  --surface: #1a1d21;
+  --surface-raised: #0d0f10;
+
+  --brand-fg: #24ae7c;
+
+  --status-scheduled-bg: #0d2a1f;
+  --status-scheduled-fg: #24ae7c;
+  --status-pending-bg: #152432;
+  --status-pending-fg: #79b5ec;
+  --status-cancelled-bg: #3e1716;
+  --status-cancelled-fg: #f37877;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-brand: var(--brand-fg);
+  --color-status-scheduled-bg: var(--status-scheduled-bg);
+  --color-status-scheduled-fg: var(--status-scheduled-fg);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-fg: var(--status-pending-fg);
+  --color-status-cancelled-bg: var(--status-cancelled-bg);
+  --color-status-cancelled-fg: var(--status-cancelled-fg);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
 @layer base {
-  /* Remove scrollbar */
-  .remove-scrollbar::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
-    border-radius: 0px;
+  * {
+    @apply border-border;
   }
 
-  .remove-scrollbar::-webkit-scrollbar-track {
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* v4 changed the default ring width from 3px to 1px and the default border
+     colour to currentColor. Pin a visible, consistent focus ring — the
+     original .shad-* rules stripped focus rings entirely, which is a
+     keyboard-accessibility failure. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* ==========================================================================
+   TYPOGRAPHY UTILITIES
+   Defined first: the layout utilities below @apply them.
+   ========================================================================== */
+@utility text-36-bold {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+@utility text-32-bold {
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+}
+
+@utility text-24-bold {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+@utility text-18-bold {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+@utility text-16-semibold {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+@utility text-16-regular {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+@utility text-14-medium {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+@utility text-14-regular {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+@utility text-12-semibold {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+@utility text-12-regular {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+
+/* ==========================================================================
+   LAYOUT UTILITIES
+   ========================================================================== */
+@utility remove-scrollbar {
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    border-radius: 0;
+  }
+
+  &::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .remove-scrollbar::-webkit-scrollbar-thumb {
+  &::-webkit-scrollbar-thumb {
     background: transparent;
-    border-radius: 0px;
+    border-radius: 0;
   }
 
-  .remove-scrollbar::-webkit-scrollbar-thumb:hover {
-    /* background: #1e2238; */
+  &::-webkit-scrollbar-thumb:hover {
     background: transparent;
   }
+
+  scrollbar-width: none;
 }
 
-@layer utilities {
-  /* ===== UTILITIES */
-  .sidebar {
-    @apply remove-scrollbar w-full max-w-72 flex-col overflow-auto bg-black-800 px-7 py-10;
-  }
+@utility clip-text {
+  @apply bg-clip-text text-transparent;
+}
 
-  .left-sidebar {
-    @apply hidden lg:flex;
-  }
+@utility header {
+  @apply text-32-bold md:text-36-bold;
+}
 
-  .right-sidebar {
-    @apply hidden xl:flex;
-  }
+@utility sub-header {
+  @apply text-18-bold md:text-24-bold;
+}
 
-  .clip-text {
-    @apply bg-clip-text text-transparent;
-  }
+/* Renamed from `.container`: v4 ships a core `container` utility and the two
+   collided, with the winner decided by layer order rather than intent. */
+@utility page-container {
+  @apply relative flex-1 overflow-y-auto px-[5%];
+}
 
-  .bg-image {
-    @apply bg-black-900 bg-light-rays bg-cover bg-no-repeat;
-  }
+@utility sub-container {
+  @apply mx-auto flex size-full flex-col py-10;
+}
 
-  .header {
-    @apply text-32-bold md:text-36-bold;
-  }
+@utility side-img {
+  @apply hidden h-full object-cover md:block;
+}
 
-  .sub-header {
-    @apply text-18-bold md:text-24-bold;
-  }
+@utility copyright {
+  @apply text-14-regular justify-items-end text-center text-muted-foreground xl:text-left;
+}
 
-  .container {
-    @apply relative flex-1 overflow-y-auto px-[5%];
-  }
+@utility flex-center {
+  @apply flex items-center justify-center;
+}
 
-  .sub-container {
-    @apply mx-auto flex size-full flex-col py-10;
-  }
+@utility flex-between {
+  @apply flex items-center justify-between;
+}
 
-  .side-img {
-    @apply hidden h-full object-cover md:block;
-  }
+/* ==========================================================================
+   SUCCESS
+   ========================================================================== */
+@utility success-img {
+  @apply m-auto flex flex-1 flex-col items-center justify-between gap-10 py-10;
+}
 
-  .copyright {
-    @apply text-14-regular justify-items-end text-center text-dark-600 xl:text-left;
-  }
+@utility request-details {
+  @apply flex w-full flex-col items-center gap-8 border-y-2 border-border py-8 md:w-fit md:flex-row;
+}
 
-  /* ==== SUCCESS */
-  .success-img {
-    @apply m-auto flex flex-1 flex-col items-center justify-between gap-10 py-10;
-  }
+/* ==========================================================================
+   ADMIN
+   ========================================================================== */
+@utility admin-header {
+  @apply sticky top-3 z-20 mx-3 flex items-center justify-between rounded-2xl border border-border bg-surface-raised px-[5%] py-5 shadow-lg xl:px-12;
+}
 
-  .request-details {
-    @apply flex w-full flex-col items-center gap-8 border-y-2 border-dark-400 py-8 md:w-fit md:flex-row;
-  }
+@utility admin-main {
+  @apply flex flex-col items-center space-y-6 px-[5%] pb-12 xl:space-y-12 xl:px-12;
+}
 
-  /* ===== ADMIN */
-  .admin-header {
-    @apply sticky top-3 z-20 mx-3 flex items-center justify-between rounded-2xl bg-dark-200 px-[5%] py-5 shadow-lg xl:px-12;
-  }
+@utility admin-stat {
+  @apply flex w-full flex-col justify-between gap-5 sm:flex-row xl:gap-10;
+}
 
-  .admin-main {
-    @apply flex flex-col items-center space-y-6 px-[5%] pb-12 xl:space-y-12 xl:px-12;
-  }
+/* ==========================================================================
+   FORM
+   ========================================================================== */
+@utility radio-group {
+  @apply flex h-full flex-1 items-center gap-2 rounded-md border border-dashed border-border bg-surface p-3;
+}
 
-  .admin-stat {
-    @apply flex w-full flex-col justify-between gap-5 sm:flex-row xl:gap-10;
-  }
+@utility checkbox-label {
+  @apply cursor-pointer text-sm font-medium text-foreground/80 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 md:leading-none;
+}
 
-  /* ==== FORM */
-  .radio-group {
-    @apply flex h-full flex-1 items-center gap-2 rounded-md border border-dashed border-dark-500 bg-dark-400 p-3;
-  }
+@utility file-upload {
+  @apply text-12-regular flex cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border bg-surface p-5;
+}
 
-  .checkbox-label {
-    @apply cursor-pointer text-sm font-medium text-dark-700 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 md:leading-none;
-  }
+@utility file-upload_label {
+  @apply flex flex-col justify-center gap-2 text-center text-muted-foreground;
+}
 
-  /* ==== File Upload */
-  .file-upload {
-    @apply text-12-regular flex cursor-pointer  flex-col items-center justify-center gap-3 rounded-md border border-dashed border-dark-500 bg-dark-400 p-5;
-  }
+/* ==========================================================================
+   CARDS / BADGES / TABLE
+   ========================================================================== */
+@utility stat-card {
+  /* The three stat background PNGs are semi-transparent. Without an opaque
+     base they let the page colour through, so in light mode the cards rendered
+     white — and their white text vanished. The base keeps these cards dark in
+     both themes, which is the intended design. */
+  @apply flex flex-1 flex-col gap-6 rounded-2xl bg-dark-300 bg-cover bg-center p-6 text-white shadow-lg;
+}
 
-  .file-upload_label {
-    @apply flex flex-col justify-center gap-2 text-center text-dark-600;
-  }
+@utility status-badge {
+  @apply flex w-fit items-center gap-2 rounded-full px-4 py-2;
+}
 
-  /* ==== Stat Card */
-  .stat-card {
-    @apply flex flex-1 flex-col gap-6 rounded-2xl bg-cover p-6 shadow-lg;
-  }
+@utility data-table {
+  @apply z-10 w-full overflow-hidden rounded-lg border border-border shadow-lg;
+}
 
-  /* ==== Status Badge */
-  .status-badge {
-    @apply flex w-fit items-center gap-2 rounded-full px-4 py-2;
-  }
+@utility table-actions {
+  @apply flex w-full items-center justify-between space-x-2 p-4;
+}
 
-  /* Data Table */
-  .data-table {
-    @apply z-10 w-full overflow-hidden rounded-lg border border-dark-400 shadow-lg;
-  }
+/* ==========================================================================
+   SHADCN OVERRIDES
 
-  .table-actions {
-    @apply flex w-full items-center justify-between space-x-2 p-4;
-  }
+   v4 dropped `@apply ... !important`. The per-utility trailing `!` is the
+   replacement, and it is still needed: these land in the same layer as the
+   core utilities they override, so ordering alone would not win reliably.
+   Focus rings are deliberately NOT stripped here (see :focus-visible above).
+   ========================================================================== */
+@utility shad-primary-btn {
+  @apply bg-green-500! text-white!;
+}
 
-  /* ===== ALIGNMENTS */
-  .flex-center {
-    @apply flex items-center justify-center;
-  }
+@utility shad-danger-btn {
+  @apply bg-red-700! text-white!;
+}
 
-  .flex-between {
-    @apply flex items-center justify-between;
-  }
+@utility shad-gray-btn {
+  @apply cursor-pointer border! border-border! bg-surface! text-foreground!;
+}
 
-  /* ===== TYPOGRAPHY */
-  .text-36-bold {
-    @apply text-[36px] leading-[40px] font-bold;
-  }
+@utility shad-input-label {
+  @apply text-14-medium text-foreground/80!;
+}
 
-  .text-24-bold {
-    @apply text-[24px] leading-[28px] font-bold;
-  }
+@utility shad-input {
+  @apply h-11! border-border! bg-surface! text-foreground! placeholder:text-muted-foreground!;
+}
 
-  .text-32-bold {
-    @apply text-[32px] leading-[36px] font-bold;
-  }
+@utility shad-input-icon {
+  @apply h-11! border-border! bg-surface! text-foreground! placeholder:text-muted-foreground!;
+}
 
-  .text-18-bold {
-    @apply text-[18px] leading-[24px] font-bold;
-  }
+@utility shad-textArea {
+  @apply border-border! bg-surface! text-foreground! placeholder:text-muted-foreground!;
+}
 
-  .text-16-semibold {
-    @apply text-[16px] leading-[20px] font-semibold;
-  }
+@utility shad-combobox-item {
+  @apply data-[disabled=true]:pointer-events-none! data-[disabled=true]:opacity-50!;
+}
 
-  .text-16-regular {
-    @apply text-[16px] leading-[20px] font-normal;
-  }
+@utility shad-combobox-trigger {
+  @apply h-11!;
+}
 
-  .text-14-medium {
-    @apply text-[14px] leading-[18px] font-medium;
-  }
+@utility shad-select-trigger {
+  @apply h-11! border-border! bg-surface! text-foreground! placeholder:text-muted-foreground!;
+}
 
-  .text-14-regular {
-    @apply text-[14px] leading-[18px] font-normal;
-  }
+@utility shad-select-content {
+  @apply border-border! bg-popover! text-popover-foreground!;
+}
 
-  .text-12-regular {
-    @apply text-[12px] leading-[16px] font-normal;
-  }
+@utility shad-dialog {
+  @apply border-border! bg-popover! text-popover-foreground!;
+}
 
-  .text-12-semibold {
-    @apply text-[12px] leading-[16px] font-semibold;
-  }
+@utility shad-error {
+  @apply text-red-400!;
+}
 
-  /* =====  SHADCN OVERRIDES */
-  .shad-primary-btn {
-    @apply bg-green-500 text-white !important;
-  }
+@utility shad-table {
+  @apply overflow-hidden! rounded-lg!;
+}
 
-  .shad-danger-btn {
-    @apply bg-red-700 text-white !important;
-  }
+@utility shad-table-row-header {
+  @apply border-b! border-border! text-muted-foreground! hover:bg-transparent!;
+}
 
-  .shad-gray-btn {
-    @apply border border-dark-500 cursor-pointer bg-dark-400 text-white !important;
-  }
+@utility shad-table-row {
+  @apply border-b! border-border! text-foreground!;
+}
 
-  .shad-input-label {
-    @apply text-14-medium text-dark-700 !important;
-  }
+@utility shad-otp {
+  @apply flex! w-full! justify-between!;
+}
 
-  .shad-input {
-    @apply bg-dark-400 placeholder:text-dark-600 border-dark-500 h-11 focus-visible:ring-0 focus-visible:ring-offset-0 !important;
-  }
+@utility shad-otp-slot {
+  @apply text-36-bold flex! size-16! justify-center! gap-4! rounded-lg! border! border-border! text-foreground!;
+}
 
-  .shad-input-icon {
-    @apply bg-dark-400 placeholder:text-dark-600 border-dark-500 h-11 focus-visible:ring-0 focus-visible:ring-offset-0 !important;
-  }
+@utility shad-alert-dialog {
+  @apply space-y-5! border-border! bg-popover! text-popover-foreground! outline-none!;
+}
 
-  .shad-textArea {
-    @apply bg-dark-400 placeholder:text-dark-600 border-dark-500 focus-visible:ring-0 focus-visible:ring-offset-0 !important;
-  }
-
-  .shad-combobox-item {
-    @apply data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 !important;
-  }
-
-  .shad-combobox-trigger {
-    @apply h-11 !important;
-  }
-
-  .shad-select-trigger {
-    @apply bg-dark-400  placeholder:text-dark-600 border-dark-500 h-11 focus:ring-0 focus:ring-offset-0 !important;
-  }
-
-  .shad-select-content {
-    @apply bg-dark-400 border-dark-500 !important;
-  }
-
-  .shad-dialog {
-    @apply bg-dark-400 border-dark-500 !important;
-  }
-
-  .shad-dialog button {
-    @apply focus:ring-0 focus:ring-offset-0 focus-visible:border-none focus-visible:outline-none focus-visible:ring-transparent focus-visible:ring-offset-0 !important;
-  }
-
-  .shad-error {
-    @apply text-red-400 !important;
-  }
-
-  .shad-table {
-    @apply rounded-lg overflow-hidden !important;
-  }
-
-  .shad-table-row-header {
-    @apply border-b border-dark-400 text-light-200 hover:bg-transparent !important;
-  }
-
-  .shad-table-row {
-    @apply border-b border-dark-400 text-light-200 !important;
-  }
-
-  .shad-otp {
-    @apply w-full flex justify-between !important;
-  }
-
-  .shad-otp-slot {
-    @apply text-36-bold justify-center flex border border-dark-500 rounded-lg size-16 gap-4 !important;
-  }
-
-  .shad-alert-dialog {
-    @apply space-y-5 bg-dark-400 border-dark-500 outline-none !important;
-  }
-
-  .shad-sheet-content button {
-    @apply top-2 focus:ring-0 focus:ring-offset-0 focus-visible:border-none focus-visible:outline-none focus-visible:ring-transparent focus-visible:ring-offset-0 !important;
-  }
-
-  /* =====  REACT PHONE NUMBER INPUT OVERRIDES */
-  .input-phone {
-    @apply mt-2 h-11 rounded-md px-3 text-sm border bg-dark-400 placeholder:text-dark-600 border-dark-500 !important;
-  }
-
-  /* =====  REACT DATE PICKER OVERRIDES */
-  .date-picker {
-    @apply overflow-hidden border-transparent w-full placeholder:text-dark-600  h-11 text-14-medium rounded-md px-3 outline-none !important;
+@utility shad-sheet-content {
+  & button {
+    @apply top-2!;
   }
 }
 
-/* =====  REACT-DATEPICKER OVERRIDES */
-.react-datepicker-wrapper.date-picker {
-  display: flex;
-  align-items: center;
+/* ==========================================================================
+   THIRD-PARTY OVERRIDES
+   ========================================================================== */
+@utility date-picker {
+  @apply text-14-medium h-11! w-full! overflow-hidden! rounded-md! border-transparent! px-3! placeholder:text-muted-foreground!;
 }
 
-.react-datepicker,
-.react-datepicker__time,
-.react-datepicker__header,
-.react-datepicker__current-month,
-.react-datepicker__day-name,
-.react-datepicker__day,
-.react-datepicker-time__header {
-  background-color: #1a1d21 !important;
-  border-color: #363a3d !important;
-  color: #abb8c4 !important;
+@utility input-phone {
+  @apply mt-2 h-11! rounded-md! border! border-border! bg-surface! px-3! text-sm! text-foreground! placeholder:text-muted-foreground!;
 }
 
-.react-datepicker__current-month,
-.react-datepicker__day-name,
-.react-datepicker-time__header {
-  color: #ffffff !important;
-}
-
-.react-datepicker__triangle {
-  fill: #1a1d21 !important;
-  color: #1a1d21 !important;
-  stroke: #1a1d21 !important;
-}
-
-.react-datepicker__time-list-item:hover {
-  background-color: #363a3d !important;
-}
-
-.react-datepicker__input-container input {
-  background-color: #1a1d21 !important;
-  width: 100%;
-  outline: none;
-}
-
-.react-datepicker__day--selected {
-  background-color: #24ae7c !important;
-  color: #ffffff !important;
-  border-radius: 4px;
-}
-
-.react-datepicker__time-list-item--selected {
-  background-color: #24ae7c !important;
-}
-
-.react-datepicker__time-container {
-  border-left: 1px solid #363a3d !important;
-}
-
-.react-datepicker__time-list-item {
-  display: flex !important;
-  align-items: center !important;
-}
-
-/* =====  REACT PHONE NUMBER INPUT OVERRIDES */
+/* react-phone-number-input renders its own input we cannot reach with a
+   utility class. */
 .PhoneInputInput {
   outline: none;
   margin-left: 4px;
-  background: #1a1d21;
+  background: var(--surface);
+  color: var(--foreground);
   font-size: 14px;
   font-weight: 500;
 }
 
 .PhoneInputInput::placeholder {
-  color: #1a1d21;
+  color: var(--muted-foreground);
+}
+
+/* Respect the OS motion preference globally. Motion's own reduced-motion
+   handling covers its animations; this covers CSS ones. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
