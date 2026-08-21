@@ -44,7 +44,6 @@ const ARBITRARY =
 const ALLOWLIST: Record<string, number> = {
   "app/admin/error.tsx": 1,
   "app/error.tsx": 1,
-  "app/globals.css": 3,
   "app/loading.tsx": 1,
   "app/not-found.tsx": 1,
   "app/page.tsx": 1,

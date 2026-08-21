@@ -52,6 +52,20 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-caret-blink: caret-blink 1.25s ease-out infinite;
   --animate-shake: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+
+  /* ---- Layout ----------------------------------------------------------
+     Tailwind's own --container-* scale stops at 7xl/80rem, so a content cap
+     above the 2xl breakpoint needs its own token. */
+  --container-8xl: 88rem;
+
+  /* Asymmetric shell tracks: content, then the hero image.
+     `minmax(0, 1fr)` rather than a bare `1fr` — 1fr is minmax(auto, 1fr), and
+     the long unbroken emails and reason strings this app renders would push
+     the track past the viewport and reintroduce horizontal scroll. */
+  --grid-template-columns-shell-md: minmax(0, 1fr) 16rem;
+  --grid-template-columns-shell-lg: minmax(0, 1fr) 22rem;
+  --grid-template-columns-shell-xl: minmax(0, 1fr) 28rem;
+  --grid-template-columns-shell-2xl: minmax(0, 1fr) 34rem;
 }
 
 @keyframes accordion-down {
@@ -345,18 +359,12 @@
   @apply text-18-bold md:text-24-bold;
 }
 
-/* Renamed from `.container`: v4 ships a core `container` utility and the two
-   collided, with the winner decided by layer order rather than intent. */
-@utility page-container {
-  @apply relative flex-1 overflow-y-auto px-[5%];
-}
-
-@utility sub-container {
-  @apply mx-auto flex size-full flex-col py-10;
-}
-
-@utility side-img {
-  @apply hidden h-full object-cover md:block;
+/* Replaces `page-container` and its percentage gutter. A percentage gutter
+   aligns to nothing and grows without limit; this is a fixed responsive
+   gutter that steps at real breakpoints, with the centring the old
+   `sub-container` did. */
+@utility page-shell {
+  @apply mx-auto w-full px-4 sm:px-6 lg:px-8 2xl:px-12;
 }
 
 @utility copyright {
@@ -386,11 +394,11 @@
    ADMIN
    ========================================================================== */
 @utility admin-header {
-  @apply sticky top-3 z-20 mx-3 flex items-center justify-between rounded-2xl border border-border bg-surface-raised px-[5%] py-5 shadow-lg xl:px-12;
+  @apply sticky top-3 z-20 mx-3 flex items-center justify-between rounded-2xl border border-border bg-surface-raised px-4 py-5 shadow-lg sm:px-6 lg:px-8 2xl:px-12;
 }
 
 @utility admin-main {
-  @apply flex flex-col items-center space-y-6 px-[5%] pb-12 xl:space-y-12 xl:px-12;
+  @apply flex flex-col items-center space-y-6 px-4 pb-12 sm:px-6 lg:px-8 xl:space-y-12 2xl:px-12;
 }
 
 @utility admin-stat {
