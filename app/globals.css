@@ -1,4 +1,9 @@
-@import "tailwindcss";
+/* `source(none)` disables automatic content detection, which is what makes the
+   @source list below authoritative rather than additive. Without it v4 also
+   scans tests/ and docs/, where prose *about* utilities gets compiled as if it
+   were markup — a comment containing bg-[url(…)] generated a real rule and
+   broke the Turbopack build on an unresolvable module. */
+@import "tailwindcss" source(none);
 @import "tw-animate-css";
 
 /* Tailwind v4 has no JS config. Sources are declared explicitly rather than
