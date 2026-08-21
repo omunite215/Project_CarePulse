@@ -4,16 +4,15 @@ import path from "node:path";
 import { expect, it } from "vitest";
 
 /**
- * Arbitrary-value ratchet.
+ * Arbitrary layout values are a build failure.
  *
  * The layout read as machine-generated because it was built from 31 one-off
  * bracket values — `px-[5%]` gutters that align to nothing, `max-w-[860px]`
- * caps invented per page. This test makes that a build failure rather than
- * something a human has to notice in review.
+ * caps invented per page. Use a `@theme` token or an on-scale utility instead.
  *
- * ALLOWLIST is a ratchet, not an exemption list: entries may be deleted, never
- * added. It reaches {} at the end of the layout refactor and is removed with
- * this comment.
+ * `var(…)` references are excluded by the regex: Radix injects values like
+ * --radix-select-trigger-height at runtime, so there is no token to replace
+ * them with, and a guard that flags the unfixable gets switched off.
  */
 const ROOTS = ["app", "components", "constants"];
 const EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
@@ -40,7 +39,6 @@ const EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
 const ARBITRARY =
   /(?<![\w-])(?:max-w|min-w|max-h|min-h|grid-cols|grid-rows|space-x|space-y|gap-x|gap-y|px|py|pt|pb|pl|pr|gap|w|h)-\[(?!var\()[^\]]+\]/g;
 
-/** Known violations awaiting the refactor. Delete entries; never add. */
 const ALLOWLIST: Record<string, number> = {
   /**
    * Permanent exemption, not a pending fix. A dialog capping at 92% of the
@@ -48,8 +46,6 @@ const ALLOWLIST: Record<string, number> = {
    * Tailwind's rem-based scale has no equivalent step.
    */
   "components/ui/dialog.tsx": 1,
-  "components/ui/select.tsx": 1,
-  "components/ui/textarea.tsx": 1,
 };
 
 function walk(dir: string): string[] {

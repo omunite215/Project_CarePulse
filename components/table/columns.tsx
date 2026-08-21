@@ -32,7 +32,7 @@ export type AppointmentColumn = ColumnDef<
  *
  * Below `md` the table is not rendered at all (see DataTable). From `md` up,
  * columns appear in order of how much an operator needs them, so 768–1023 is a
- * readable five-column table instead of a seven-column squeeze — and `xl` gets
+ * readable four-column table instead of a seven-column squeeze — and `xl` gets
  * real work: Reason stops truncating at 220px on a wide monitor.
  */
 const PRIORITY = {
