@@ -42,7 +42,6 @@ const ARBITRARY =
 
 /** Known violations awaiting the refactor. Delete entries; never add. */
 const ALLOWLIST: Record<string, number> = {
-  "components/table/columns.tsx": 4,
   /**
    * Permanent exemption, not a pending fix. A dialog capping at 92% of the
    * viewport is expressing "fit the screen", not a layout magic number, and

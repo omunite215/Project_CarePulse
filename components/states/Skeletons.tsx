@@ -93,19 +93,29 @@ export function DataTableSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <Busy label="Loading appointments">
       <div className="data-table">
-        <Skeleton className="h-12 w-full rounded-none" />
+        <Skeleton className="hidden h-12 w-full rounded-none md:block" />
         <div className="divide-y divide-border">
           {Array.from({ length: rows }, (_, i) => (
-            <div key={i} className="flex items-center gap-4 p-4">
-              <Skeleton className="h-4 w-6" />
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-7 w-28 rounded-full" />
-              <Skeleton className="h-4 w-40" />
-              <div className="flex items-center gap-3">
-                <Skeleton className="size-8 rounded-full" />
-                <Skeleton className="h-4 w-28" />
+            <div key={i} className="p-4">
+              {/* Card shape below md, row shape from md up — the skeleton has
+                  to switch with the content or it reintroduces the shift. */}
+              <div className="space-y-2 md:hidden">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-48" />
+                <Skeleton className="h-7 w-28 rounded-full" />
+                <Skeleton className="h-8 w-full" />
               </div>
-              <Skeleton className="ml-auto h-8 w-40" />
+              <div className="hidden items-center gap-4 md:flex">
+                <Skeleton className="hidden h-4 w-6 lg:block" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-7 w-28 rounded-full" />
+                <Skeleton className="h-4 w-40" />
+                <div className="hidden items-center gap-3 lg:flex">
+                  <Skeleton className="size-8 rounded-full" />
+                  <Skeleton className="h-4 w-28" />
+                </div>
+                <Skeleton className="ml-auto h-8 w-40" />
+              </div>
             </div>
           ))}
         </div>

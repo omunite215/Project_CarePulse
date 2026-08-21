@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Appointment } from "@/lib/data/types";
+import { AppointmentRowCard } from "./AppointmentRowCard";
 import { columns } from "./columns";
 import { tableFeatures } from "./features";
 
@@ -97,34 +98,48 @@ export function DataTable({
         aria-busy={isFetching}
         className={isFetching ? "opacity-60 transition-opacity" : undefined}
       >
-        <Table className="shad-table">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                className="shad-table-row-header"
-              >
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    <table.FlexRender header={header} />
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+        {/* Two renderers, one data source. `md:hidden` / `hidden md:block`
+            rather than a JS width check: a media query is correct on the
+            server's first paint, where `window` does not exist. */}
+        <div className="divide-y divide-border md:hidden">
+          {table.getRowModel().rows.map((row) => (
+            <AppointmentRowCard key={row.id} appointment={row.original} />
+          ))}
+        </div>
 
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="shad-table-row">
-                {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    <table.FlexRender cell={cell} />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="hidden md:block">
+          <Table className="shad-table">
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="shad-table-row-header">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={header.column.columnDef.meta?.className}
+                    >
+                      <table.FlexRender header={header} />
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} className="shad-table-row">
+                  {row.getAllCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cell.column.columnDef.meta?.className}
+                    >
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <div className="table-actions">

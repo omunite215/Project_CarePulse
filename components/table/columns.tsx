@@ -1,6 +1,11 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type {
+  CellData,
+  ColumnDef,
+  RowData,
+  TableFeatures,
+} from "@tanstack/react-table";
 import Image from "next/image";
 
 import { AppointmentModal } from "@/components/AppointmentModal";
@@ -22,10 +27,44 @@ export type AppointmentColumn = ColumnDef<
   Appointment
 >;
 
+/**
+ * Column priority.
+ *
+ * Below `md` the table is not rendered at all (see DataTable). From `md` up,
+ * columns appear in order of how much an operator needs them, so 768–1023 is a
+ * readable five-column table instead of a seven-column squeeze — and `xl` gets
+ * real work: Reason stops truncating at 220px on a wide monitor.
+ */
+const PRIORITY = {
+  always: "",
+  md: "hidden md:table-cell",
+  lg: "hidden lg:table-cell",
+  xl: "hidden xl:table-cell",
+} as const;
+
+/**
+ * Installed v9.1.2's real `ColumnMeta` takes three generics — `TFeatures`,
+ * `TData`, and a `TValue` that defaults to `CellData` — not the two-param
+ * guess this augmentation started from. Declaration merging requires matching
+ * arity, so all three are declared here even though `className` does not vary
+ * per-value and never touches `TValue` in its own type.
+ */
+declare module "@tanstack/react-table" {
+  interface ColumnMeta<
+    TFeatures extends TableFeatures,
+    TData extends RowData,
+    TValue extends CellData = CellData,
+  > {
+    /** Responsive visibility class, applied to header and cell alike. */
+    className?: string;
+  }
+}
+
 export const columns: AppointmentColumn[] = [
   {
     id: "index",
     header: "#",
+    meta: { className: PRIORITY.lg },
     cell: ({ row }) => (
       <span className="text-14-medium text-muted-foreground">{row.index + 1}</span>
     ),
@@ -33,8 +72,9 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "patient",
     header: "Patient",
+    meta: { className: PRIORITY.always },
     cell: ({ row }) => (
-      <div className="min-w-[140px]">
+      <div className="min-w-36">
         <p className="text-14-medium text-foreground">
           {row.original.patient.name}
         </p>
@@ -47,8 +87,9 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "status",
     header: "Status",
+    meta: { className: PRIORITY.always },
     cell: ({ row }) => (
-      <div className="min-w-[115px]">
+      <div className="min-w-28">
         <StatusBadge status={row.original.status} />
       </div>
     ),
@@ -56,8 +97,9 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "schedule",
     header: "Appointment",
+    meta: { className: PRIORITY.md },
     cell: ({ row }) => (
-      <p className="text-14-regular min-w-[130px] text-foreground">
+      <p className="text-14-regular min-w-32 text-foreground">
         {formatDateTime(row.original.schedule).dateTime}
       </p>
     ),
@@ -65,6 +107,7 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "primaryPhysician",
     header: "Doctor",
+    meta: { className: PRIORITY.lg },
     cell: ({ row }) => {
       const doctor = findDoctor(row.original.primaryPhysician);
       return (
@@ -89,9 +132,10 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "reason",
     header: "Reason",
+    meta: { className: PRIORITY.xl },
     cell: ({ row }) => (
       <p
-        className="text-14-regular max-w-[220px] truncate text-foreground/80"
+        className="text-14-regular max-w-56 truncate text-foreground/80 xl:max-w-none xl:whitespace-normal"
         title={row.original.reason}
       >
         {row.original.reason}
@@ -101,6 +145,7 @@ export const columns: AppointmentColumn[] = [
   {
     id: "actions",
     header: () => <span className="pl-4">Actions</span>,
+    meta: { className: PRIORITY.always },
     cell: ({ row }) => {
       const appointment = row.original;
       // A cancelled appointment has nowhere left to go, so offering Schedule
