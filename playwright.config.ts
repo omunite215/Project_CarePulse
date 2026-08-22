@@ -45,6 +45,19 @@ export default defineConfig({
         deviceScaleFactor: 2,
       },
     },
+    {
+      name: "responsive",
+      // Lives at the top level (tests/responsive-shots.spec.ts), not under
+      // tests/e2e/, so the e2e project's /e2e\/.*\.spec\.ts/ match can't pick
+      // it up; the name also doesn't contain "screenshots.spec.ts", so the
+      // shots project's testMatch above doesn't claim it either.
+      testMatch: /responsive-shots\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        // Viewport is set per-test; 1× keeps 42 captures to a sane disk size.
+        deviceScaleFactor: 1,
+      },
+    },
   ],
 
   webServer: {

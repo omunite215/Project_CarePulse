@@ -40,3 +40,6 @@ next-env.d.ts
 /.playwright/
 /playwright-report/
 /test-results/
+
+# Breakpoint audit captures — regenerated on demand, not committed
+/public/screenshots/responsive/
