@@ -71,6 +71,20 @@
   --grid-template-columns-shell-lg: minmax(0, 1fr) 22rem;
   --grid-template-columns-shell-xl: minmax(0, 1fr) 28rem;
   --grid-template-columns-shell-2xl: minmax(0, 1fr) 34rem;
+
+  /* Filter bar: search takes the slack, the other controls size to content.
+     A floor on the search track because SelectTrigger carries its own w-full,
+     which under flex resolves to a 100% basis and starves a flex-1 sibling
+     whose only in-flow child is itself percentage-width.
+     Five tracks, not four: Clear only renders while a filter is active, so
+     the bar has 4 children unfiltered and 5 filtered. Giving Clear its own
+     trailing track means the unfiltered state just leaves it empty (an
+     `auto` track with nothing placed in it sizes to 0 — no dead gap) instead
+     of Export having nowhere to go and wrapping to its own row. This also
+     means the date-pair item below must stay a single-track item (`lg:col-
+     auto`, not spanning 2) — spanning 2 of these tracks leaves only one for
+     whichever of Clear/Export renders last, and that one wraps instead. */
+  --grid-template-columns-filters: minmax(12rem, 1fr) auto auto auto auto;
 }
 
 @keyframes accordion-down {

@@ -38,7 +38,7 @@ export function AppointmentFilters({ controller, onExport, canExport }: Props) {
   }, [search, filters.q, update]);
 
   return (
-    <div className="grid w-full gap-3 sm:grid-cols-2 lg:flex lg:items-center">
+    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-filters lg:items-center">
       <div className="relative flex-1">
         <SearchIcon
           className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
