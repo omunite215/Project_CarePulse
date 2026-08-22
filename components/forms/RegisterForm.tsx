@@ -28,10 +28,10 @@ import {
 } from "@/lib/validation/patient";
 
 /**
- * Full patient registration: four sections, 23 fields.
+ * Full patient registration: four sections, 22 fields.
  *
  * What was here before was a byte-for-byte copy of `PatientForm` — three fields,
- * validated against this 23-field schema, so it could never submit.
+ * validated against this 22-field schema, so it could never submit.
  *
  * The payload goes over as FormData because of the file. Everything else is one
  * JSON blob under `payload`, which keeps a single Zod schema in charge of
@@ -50,7 +50,7 @@ export default function RegisterForm({ user }: { user: User }) {
     },
   });
 
-  // 23 fields is a lot to lose to a stray refresh.
+  // 22 fields is a lot to lose to a stray refresh.
   const draft = useFormDraft(form, `register:${user.id}`);
 
   const selectedPhysician = form.watch("primaryPhysician");
@@ -136,10 +136,17 @@ export default function RegisterForm({ user }: { user: User }) {
             label="Gender"
             renderSkeleton={(field) => (
               <FormControl>
-                {/* grid, not flex: three equal cells hold their width instead
-                    of shrinking to their label text at narrow viewports. */}
+                {/* grid, not flex: equal cells hold their width instead of
+                    shrinking to their label text at narrow viewports. Two
+                    columns below `lg`: at 768px this field shares one cell of
+                    a 2-column section grid (~356px), so three equal columns
+                    would give "Female" ~110px of cell for ~127px of content
+                    (radio + gap + label) and it would overflow into "Other".
+                    Two columns give ~172px each — comfortable — and the third
+                    option wraps to a second row. Three-up returns at `lg`,
+                    where there is room again. */}
                 <RadioGroup
-                  className="grid grid-cols-3 gap-3"
+                  className="grid grid-cols-2 gap-3 lg:grid-cols-3"
                   onValueChange={field.onChange}
                   value={String(field.value ?? "")}
                 >
@@ -195,6 +202,10 @@ export default function RegisterForm({ user }: { user: User }) {
             Medical information
           </h2>
 
+          {/* Full row until `2xl`: this is the Medical section's primary
+              field, and its dropdown items render doctor avatars that need
+              more room than a plain select — unlike `identificationType`
+              below, which stays a normal grid cell. */}
           <CustomFormField
             fieldType={FormFieldType.SELECT}
             control={form.control}

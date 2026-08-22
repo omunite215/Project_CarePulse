@@ -16,8 +16,12 @@ import type { Page } from "@playwright/test";
  *  3. Reduced-motion emulation plus a belt-and-braces stylesheet kills every
  *     animation, including the StatCard count-up, which would otherwise be
  *     caught mid-tick.
- *  4. Fonts are awaited, the pointer is parked, and the page is scrolled to the
- *     top so no stray hover or focus ring sneaks in.
+ *  4. Fonts are awaited and the pointer is parked away from any element so no
+ *     stray hover or focus ring sneaks in. Scroll position is left alone —
+ *     `04-register-medical` and `05-register-consent` rely on the test having
+ *     scrolled there first, and resetting it here silently overwrote both
+ *     with a copy of `03-register-personal` (each `page.goto`/`page.reload`
+ *     already lands at the top, so nothing needed a reset here anyway).
  */
 
 const OUT = "public/screenshots";
@@ -44,7 +48,6 @@ async function stabilise(page: Page) {
   });
   await page.evaluate(() => document.fonts.ready);
   await page.mouse.move(0, 0);
-  await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForLoadState("networkidle");
 }
 
@@ -69,7 +72,16 @@ async function signInAsAdmin(page: Page) {
   await page.goto("/?admin=true");
   await page.locator('input[autocomplete="one-time-code"]').fill(PASSKEY);
   await expect(page).toHaveURL(/\/admin$/, { timeout: 20_000 });
-  await expect(page.getByRole("table")).toBeVisible();
+
+  // Not the table: it's `hidden` below `md` (a card list renders instead — see
+  // components/table/DataTable.tsx), so it can never become visible at the
+  // 390px viewport the mobile captures use. The search input belongs to
+  // AppointmentFilters, which mounts only once the seeded query-client cache
+  // resolves past the `isPending` skeleton branch, so it is both present at
+  // every width and a true signal that the data-dependent part of the
+  // dashboard has actually painted — the same reason this assertion exists at
+  // all, just satisfiable everywhere instead of only at desktop widths.
+  await expect(page.getByLabel("Search appointments")).toBeVisible();
 }
 
 test.beforeEach(async ({ page, request }) => {

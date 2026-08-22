@@ -4,13 +4,24 @@ import type { Page } from "@playwright/test";
 /**
  * Horizontal overflow is a property, not a snapshot.
  *
- * The layout used to cap content at 860px inside a `px-[5%]` gutter, and the
- * admin table needed ~975px before its columns collided. Neither was visible
- * to HTTP-level testing, and screenshots only catch a regression if a human
- * looks at them. This asserts the invariant directly at every breakpoint the
- * design targets, so the next regression fails CI instead of shipping — and
- * it never needs regenerating when the design changes, because it is a bound
- * ("content fits the viewport"), not a pixel diff.
+ * The layout used to cap content at 860px inside a `px-[5%]` gutter. That was
+ * invisible to HTTP-level testing, and screenshots only catch a regression if
+ * a human looks at them, so `expectNoOverflow` asserts the invariant directly
+ * — `document.documentElement.scrollWidth` fits the viewport — at every
+ * breakpoint the design targets, on every patient route and the admin
+ * dashboard shell.
+ *
+ * That check cannot see a table outgrowing its own container, though:
+ * `components/ui/table.tsx` wraps every table in a `<div class="overflow-x-
+ * auto">`, so a table wider than its space scrolls inside that div — the
+ * div's own box never grows, and the *document's* scrollWidth stays flat no
+ * matter how wide the table gets. `expectTableFitsWrapper` closes that gap by
+ * comparing the wrapper's own scrollWidth against its clientWidth directly,
+ * which is the only way to catch the admin table's historical "~975px before
+ * its columns collided" regression class.
+ *
+ * Together these never need regenerating when the design changes, because
+ * both are bounds ("content fits its container"), not pixel diffs.
  */
 const WIDTHS = [390, 640, 768, 1024, 1280, 1536, 1920] as const;
 
@@ -46,6 +57,34 @@ async function expectNoOverflow(page: Page, label: string) {
 }
 
 /**
+ * Checks the admin table's own wrapper, not the document.
+ *
+ * `expectNoOverflow` never sees this class of regression (see the file
+ * docstring): the wrapper's `overflow-x-auto` absorbs an over-wide table by
+ * scrolling internally, which keeps the page itself from overflowing even
+ * while the table has genuinely outgrown its box. Comparing the wrapper's
+ * `scrollWidth` to its own `clientWidth` catches that directly.
+ *
+ * Below `md` the table is `display: none` (a card list renders instead), so
+ * `scrollWidth` and `clientWidth` are both 0 and the assertion is a no-op —
+ * intentionally, since there is nothing to measure there.
+ */
+async function expectTableFitsWrapper(page: Page, label: string) {
+  const table = page.locator("table.shad-table");
+  if ((await table.count()) === 0) return;
+
+  const { scrollWidth, clientWidth } = await table.evaluate((el) => {
+    const wrapper = el.parentElement as HTMLElement;
+    return { scrollWidth: wrapper.scrollWidth, clientWidth: wrapper.clientWidth };
+  });
+
+  expect(
+    scrollWidth,
+    `${label} table wrapper overflows by ${scrollWidth - clientWidth}px`,
+  ).toBeLessThanOrEqual(clientWidth);
+}
+
+/**
  * Onboards a throwaway user through the real form and lands on their
  * registration page.
  *
@@ -54,7 +93,7 @@ async function expectNoOverflow(page: Page, label: string) {
  * `/new-appointment` before the registration form ever renders. Measuring
  * that redirect target would be a valid measurement, but labelling it
  * "register" would be a lie: it never touches the widest, most complex layout
- * in the app (23 fields across four responsive sections). That layout is
+ * in the app (22 fields across four responsive sections). That layout is
  * exactly what this suite exists to catch a regression in, so each width
  * buys a fresh user rather than taking the shortcut.
  *
@@ -156,6 +195,7 @@ test.describe("admin", () => {
       // static server-rendered chrome around it.
       await expect(page.getByLabel("Search appointments")).toBeVisible();
       await expectNoOverflow(page, `admin @ ${width}`);
+      await expectTableFitsWrapper(page, `admin @ ${width}`);
     });
   }
 });

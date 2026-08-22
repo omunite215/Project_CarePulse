@@ -44,7 +44,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans text-foreground antialiased",
+          // `min-h-screen` resolves against the layout viewport, so on
+          // mobile the bottom of the page sits behind the browser chrome —
+          // the same reason every other shell in this app uses `min-h-dvh`.
+          "min-h-dvh bg-background font-sans text-foreground antialiased",
           fontSans.variable,
         )}
       >
