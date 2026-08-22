@@ -181,8 +181,9 @@ pnpm check       # lint + typecheck + test
 **Regenerating assets**
 
 ```bash
-pnpm shots       # rewrites public/screenshots/ from a live build
-pnpm diagram     # exports docs/architecture.drawio to PNG (needs draw.io desktop)
+pnpm shots             # rewrites public/screenshots/ from a live build
+pnpm shots:responsive  # 42-capture breakpoint audit, tests/responsive-shots.spec.ts
+pnpm diagram           # exports docs/architecture.drawio to PNG (needs draw.io desktop)
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
