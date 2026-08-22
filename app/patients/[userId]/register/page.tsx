@@ -28,7 +28,7 @@ export default async function RegisterPage({
   if (!userResult.data) notFound();
 
   // Already registered? Skip straight to booking rather than letting them
-  // fill in 23 fields and hit a conflict on submit.
+  // fill in 22 fields and hit a conflict on submit.
   //
   // Note: because the layout shell has already begun streaming by this point,
   // Next cannot emit a Location header and falls back to a meta-refresh

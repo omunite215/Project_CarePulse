@@ -15,7 +15,7 @@ import { UserFormValidation, type UserFormValues } from "@/lib/validation/user";
  * Onboarding: name, email, phone.
  *
  * Three things were broken here and all three mattered:
- *  - it validated against the 23-field `PatientFormValidation`, so
+ *  - it validated against the 22-field `PatientFormValidation`, so
  *    `handleSubmit` never reached `onSubmit`;
  *  - `createUser` returned `undefined` on success, so the redirect never fired;
  *  - `setIsLoading(false)` was never called, so the button stayed disabled and

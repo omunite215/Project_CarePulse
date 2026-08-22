@@ -34,7 +34,7 @@ interface AuthShellProps {
  * viewport, so on mobile the bottom of the form sits behind the browser chrome.
  * Page-level scrolling also means the scrollbar stays visible — the old shell
  * scrolled an inner element with `remove-scrollbar`, which hid the only
- * scroll-position cue a 23-field form gives you.
+ * scroll-position cue a 22-field form gives you.
  */
 export function AuthShell({
   children,
