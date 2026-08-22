@@ -100,12 +100,19 @@ export function DataTable({
       >
         {/* Two renderers, one data source. `md:hidden` / `hidden md:block`
             rather than a JS width check: a media query is correct on the
-            server's first paint, where `window` does not exist. */}
-        <div className="divide-y divide-border md:hidden">
+            server's first paint, where `window` does not exist.
+            `<ul>`/`<li>` (not `<div>`/`<article>`) so screen readers get the
+            row count and position ("2 of 10") the table gives for free via
+            its own row/cell roles — a card list on its own has nothing to
+            replace that with. No explicit `role="list"`: the element already
+            has that role implicitly, and the lint config (jsx-a11y/no-
+            redundant-roles) treats restating it as a defect, not a safety
+            net. */}
+        <ul className="divide-y divide-border md:hidden">
           {table.getRowModel().rows.map((row) => (
             <AppointmentRowCard key={row.id} appointment={row.original} />
           ))}
-        </div>
+        </ul>
 
         <div className="hidden md:block">
           <Table className="shad-table">

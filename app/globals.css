@@ -343,29 +343,6 @@
 /* ==========================================================================
    LAYOUT UTILITIES
    ========================================================================== */
-@utility remove-scrollbar {
-  &::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-    border-radius: 0;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 0;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: transparent;
-  }
-
-  scrollbar-width: none;
-}
-
 @utility clip-text {
   @apply bg-clip-text text-transparent;
 }
@@ -428,7 +405,7 @@
    FORM
    ========================================================================== */
 @utility radio-group {
-  @apply flex h-full flex-1 items-center gap-2 rounded-md border border-dashed border-border bg-surface p-3;
+  @apply flex h-full items-center gap-2 rounded-md border border-dashed border-border bg-surface p-3;
 }
 
 @utility checkbox-label {

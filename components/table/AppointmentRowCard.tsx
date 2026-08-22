@@ -29,8 +29,10 @@ export function AppointmentRowCard({
 
   // Separators come from `divide-y` on the parent list, not a per-card
   // border — `border-b last:border-b-0` sets the same property twice.
+  // `<li>`, not `<article>`: the parent is now a real `<ul>` (see DataTable),
+  // and a list of list items is what gives assistive tech "2 of 10".
   return (
-    <article className="p-4">
+    <li className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-14-medium truncate text-foreground">
@@ -90,6 +92,6 @@ export function AppointmentRowCard({
           />
         </div>
       )}
-    </article>
+    </li>
   );
 }

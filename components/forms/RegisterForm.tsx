@@ -138,13 +138,15 @@ export default function RegisterForm({ user }: { user: User }) {
               <FormControl>
                 {/* grid, not flex: equal cells hold their width instead of
                     shrinking to their label text at narrow viewports. Two
-                    columns below `lg`: at 768px this field shares one cell of
-                    a 2-column section grid (~356px), so three equal columns
-                    would give "Female" ~110px of cell for ~127px of content
-                    (radio + gap + label) and it would overflow into "Other".
-                    Two columns give ~172px each — comfortable — and the third
-                    option wraps to a second row. Three-up returns at `lg`,
-                    where there is room again. */}
+                    columns below `lg`: at 768px the content track is 512px
+                    (768 minus the 256px shell image track), minus a 48px
+                    page-shell gutter, split across two `gap-6` section
+                    columns — this field's cell is ~220px, not ~356px. Three
+                    equal columns would give "Female" ~65px of cell for
+                    ~127px of content (radio + gap + label) and it would
+                    overflow into "Other". Two columns give ~104px each —
+                    comfortable — and the third option wraps to a second row.
+                    Three-up returns at `lg`, where there is room again. */}
                 <RadioGroup
                   className="grid grid-cols-2 gap-3 lg:grid-cols-3"
                   onValueChange={field.onChange}

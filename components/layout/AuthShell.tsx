@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DemoBanner } from "@/components/DemoBanner";
-import { cn } from "@/lib/utils";
 
 interface AuthShellProps {
   children: ReactNode;
@@ -12,7 +11,6 @@ interface AuthShellProps {
   image: { src: string; alt: string };
   /** Rendered under the content, e.g. the admin link. */
   footerSlot?: ReactNode;
-  containerClassName?: string;
 }
 
 /**
@@ -36,20 +34,10 @@ interface AuthShellProps {
  * scrolled an inner element with `remove-scrollbar`, which hid the only
  * scroll-position cue a 22-field form gives you.
  */
-export function AuthShell({
-  children,
-  image,
-  footerSlot,
-  containerClassName,
-}: AuthShellProps) {
+export function AuthShell({ children, image, footerSlot }: AuthShellProps) {
   return (
     <div className="grid min-h-dvh grid-cols-1 md:grid-cols-shell-md lg:grid-cols-shell-lg xl:grid-cols-shell-xl 2xl:grid-cols-shell-2xl">
-      <section
-        className={cn(
-          "page-shell flex max-w-5xl flex-col py-8 sm:py-10 lg:py-14 2xl:max-w-8xl",
-          containerClassName,
-        )}
-      >
+      <section className="page-shell flex max-w-5xl flex-col py-8 sm:py-10 lg:py-14 2xl:max-w-8xl">
         <DemoBanner />
 
         <header className="mb-10 flex items-center justify-between lg:mb-12">
