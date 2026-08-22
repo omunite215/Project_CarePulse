@@ -78,10 +78,13 @@ async function expectTableFitsWrapper(page: Page, label: string) {
     return { scrollWidth: wrapper.scrollWidth, clientWidth: wrapper.clientWidth };
   });
 
+  // +1 for the same reason as expectNoOverflow above: sub-pixel rounding on
+  // fractional device widths can round scrollWidth up by a hair with no real
+  // overflow, and a genuine table overflow is nowhere close to 1px.
   expect(
     scrollWidth,
     `${label} table wrapper overflows by ${scrollWidth - clientWidth}px`,
-  ).toBeLessThanOrEqual(clientWidth);
+  ).toBeLessThanOrEqual(clientWidth + 1);
 }
 
 /**

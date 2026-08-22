@@ -14,7 +14,7 @@ import { expect, it } from "vitest";
  * --radix-select-trigger-height at runtime, so there is no token to replace
  * them with, and a guard that flags the unfixable gets switched off.
  */
-const ROOTS = ["app", "components", "constants"];
+const ROOTS = ["app", "components", "constants", "lib"];
 const EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
 
 /**
@@ -37,7 +37,7 @@ const EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
  * than using a token, so it is not a path anyone takes by accident.
  */
 const ARBITRARY =
-  /(?<![\w-])(?:max-w|min-w|max-h|min-h|grid-cols|grid-rows|space-x|space-y|gap-x|gap-y|px|py|pt|pb|pl|pr|gap|w|h)-\[(?!var\()[^\]]+\]/g;
+  /(?<![\w-])(?:max-w|min-w|max-h|min-h|grid-cols|grid-rows|space-x|space-y|gap-x|gap-y|mx|my|mt|mb|ml|mr|m|px|py|pt|pb|pl|pr|gap|size|basis|inset|top|right|bottom|left|aspect|w|h)-\[(?!var\()[^\]]+\]/g;
 
 const ALLOWLIST: Record<string, number> = {
   /**
