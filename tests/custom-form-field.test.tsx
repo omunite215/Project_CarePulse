@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import { describe, expect, it } from "vitest";
 
@@ -130,5 +130,50 @@ describe("textarea character counter", () => {
     expect(counter).not.toHaveAttribute("aria-live");
     expect(counter).not.toHaveAttribute("role");
     expect(screen.getByText("Maximum 500 characters.")).toBeInTheDocument();
+  });
+});
+
+// Module scope, same reason as `TextareaHarness` above.
+function DatePickerHarness({ variant }: { variant?: "default" | "birthdate" }) {
+  const form = useForm<PatientFormValues>();
+  return (
+    <Form {...form}>
+      <CustomFormField
+        fieldType={FormFieldType.DATE_PICKER}
+        control={form.control}
+        name="birthDate"
+        label="Date of birth"
+        placeholder="Select your date of birth"
+        variant={variant}
+      />
+    </Form>
+  );
+}
+
+describe("date picker variant wiring", () => {
+  // Pins `CustomFormField`'s `variant={props.variant}` forward to `DateField`
+  // (see RegisterForm's birthDate field). Nothing else — not lint, not
+  // typecheck — fails if that forward is dropped; only the rendered DOM does.
+  it("renders month and year <select>s once the popover opens with variant=\"birthdate\"", () => {
+    render(<DatePickerHarness variant="birthdate" />);
+
+    // The button's accessible name comes from the associated <FormLabel>
+    // ("Date of birth"), not its visible placeholder span — the label's
+    // `for`/`id` association wins over content.
+    fireEvent.click(screen.getByRole("button", { name: /date of birth/i }));
+
+    const selects = screen.getAllByRole("combobox");
+    expect(selects).toHaveLength(2);
+    for (const select of selects) {
+      expect(select.tagName).toBe("SELECT");
+    }
+  });
+
+  it("renders no <select> at all once the popover opens with no variant", () => {
+    render(<DatePickerHarness />);
+
+    fireEvent.click(screen.getByRole("button", { name: /date of birth/i }));
+
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
   });
 });

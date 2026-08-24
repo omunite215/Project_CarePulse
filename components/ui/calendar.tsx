@@ -55,8 +55,19 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
            UI.Dropdown below) — without it that span is a plain inline span
            sized only by its text, so the chevron has no room left on the
            line and wraps underneath instead of sitting beside the value. */
+        /* `peer-focus-visible:` compensates for UI.Dropdown below: `opacity-0`
+           fades the select's whole rendered box, including the global
+           `:focus-visible` ring from `app/globals.css:274-276`, so a
+           keyboard user tabbing onto the (invisible) select would otherwise
+           see no focus indicator at all. This ports upstream's own
+           `.rdp-dropdown:focus-visible ~ .rdp-caption_label { outline: 5px
+           auto Highlight }` rule onto the visible label span, using this
+           project's ring tokens instead of `outline: Highlight`. Inert when
+           there is no sibling select (the plain, non-dropdown caption used
+           by the appointment picker): `peer` never matches, so these
+           utilities never trigger there. */
         [UI.CaptionLabel]:
-          "inline-flex items-center whitespace-nowrap text-14-medium text-foreground",
+          "inline-flex items-center whitespace-nowrap rounded-md text-14-medium text-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background",
         [UI.Nav]: "absolute inset-x-0 top-0 flex items-center justify-between",
         [UI.PreviousMonthButton]:
           "inline-flex size-8 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40",
@@ -96,7 +107,8 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
            or "2026", which is what a screenshot caught: doubled text with a
            stray chevron. Reproducing the library's own invisible-overlay
            technique with our own tokens is what actually fixes it. */
-        [UI.Dropdown]: "absolute inset-0 z-10 cursor-pointer appearance-none opacity-0",
+        [UI.Dropdown]:
+          "peer absolute inset-0 z-10 cursor-pointer appearance-none opacity-0",
         ...classNames,
       }}
       components={{ Chevron: CalendarChevron }}
