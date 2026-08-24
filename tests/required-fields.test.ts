@@ -51,8 +51,14 @@ describe("isRequiredField", () => {
     expect(actual).toEqual(OPTIONAL);
   });
 
-  it("accounts for all 22 fields", () => {
-    expect(REQUIRED.length + OPTIONAL.length).toBe(22);
+  it("accounts for every field in the schema", () => {
+    // The pinned lists above are only meaningful if they describe the whole
+    // schema. Comparing them to each other proves nothing; comparing their
+    // union to the schema's own keys is what catches a field being added or
+    // removed without anyone revisiting the asterisks.
+    expect([...REQUIRED, ...OPTIONAL].toSorted()).toEqual(
+      Object.keys(PatientFormValidation.shape).toSorted(),
+    );
   });
 
   it("treats a consent checkbox as required despite being a plain boolean", () => {
