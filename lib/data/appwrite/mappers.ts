@@ -60,9 +60,23 @@ export function toPatient(doc: Doc): Patient {
 }
 
 export function toAppointment(doc: Doc): Appointment {
-  // `patient` is a relationship attribute, so Appwrite expands it into a full
-  // nested document on read but expects a bare id string on write.
-  const patientDoc = doc.patient as Doc | null;
+  /*
+   * `patient` is a relationship attribute: written as a bare id string, and
+   * read back as *either* a nested document or that same bare id string.
+   *
+   * Appwrite 1.9 expands it only when the read explicitly asks —
+   * `Query.select(["*", "patient.*"])` — which `createDocument` and
+   * `updateDocument` do implicitly for the document they echo back, but
+   * `getDocument` and `listDocuments` do not. This used to be an unguarded
+   * `as Doc`, so an unexpanded read cast a string to a document, every `str()`
+   * lookup on it returned `""`, and the admin table's Patient column rendered
+   * blank with no error anywhere. Checking the shape instead means a read that
+   * forgets to select degrades to the visible placeholder below.
+   */
+  const patientDoc =
+    typeof doc.patient === "object" && doc.patient !== null
+      ? (doc.patient as Doc)
+      : null;
 
   return {
     id: doc.$id,
@@ -85,6 +99,41 @@ export function patientToDocument(
   patient: Omit<Patient, "id" | "createdAt">,
 ): Record<string, unknown> {
   return { ...patient };
+}
+
+/** Matches the `searchText` attribute's size; see scripts/appwrite-provision.mjs. */
+const SEARCH_TEXT_MAX = 1000;
+
+/**
+ * Builds the denormalised free-text blob the `searchText` attribute holds.
+ *
+ * `AppointmentQuery.search` promises a match against patient name, patient
+ * email, doctor and reason — but the first two live on the *patient* collection,
+ * reachable only through the `patient` relationship, and Appwrite has no
+ * fulltext index that spans a relationship. So the appointment document carries
+ * its own copy. Keep the field list in step with `matches()` in
+ * `lib/data/demo/demo.repository.ts`, which is the behaviour this reproduces.
+ *
+ * Lowercased for symmetry with the demo matcher; Appwrite's fulltext index is
+ * case-insensitive either way.
+ */
+export function appointmentSearchText(parts: {
+  patientName: string;
+  patientEmail: string;
+  primaryPhysician: string;
+  reason: string;
+}): string {
+  return [
+    parts.patientName,
+    parts.patientEmail,
+    parts.primaryPhysician,
+    parts.reason,
+  ]
+    .join(" ")
+    .toLowerCase()
+    // Truncated rather than allowed to 400: a booking must not fail because
+    // someone has a long email and a long reason.
+    .slice(0, SEARCH_TEXT_MAX);
 }
 
 /* ------------------------------- coercion -------------------------------- */

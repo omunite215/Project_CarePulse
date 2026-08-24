@@ -9,6 +9,7 @@ import type {
   Appointment,
   AppointmentListResult,
   AppointmentQuery,
+  AppointmentStatus,
   CreateAppointmentInput,
   CreateUserInput,
   Patient,
@@ -17,9 +18,15 @@ import type {
   UploadedFile,
   User,
 } from "../types";
-import { countByStatus } from "../demo/demo.repository";
+import { APPOINTMENT_STATUSES } from "../types";
 import { fileViewUrl, getAppwrite } from "./client";
-import { patientToDocument, toAppointment, toPatient, toUser } from "./mappers";
+import {
+  appointmentSearchText,
+  patientToDocument,
+  toAppointment,
+  toPatient,
+  toUser,
+} from "./mappers";
 
 /**
  * Appwrite-backed repository.
@@ -29,6 +36,15 @@ import { patientToDocument, toAppointment, toPatient, toUser } from "./mappers";
  * swallowed. The original implementation caught only 409 and returned
  * `undefined` for everything else, which the caller then read as "no user".
  */
+/**
+ * Pulls the related patient document into an appointment read.
+ *
+ * Without it Appwrite 1.9 returns `patient` as a bare id string — see the note
+ * in `toAppointment`. `"*"` is required alongside it, or the projection narrows
+ * to the relationship alone and every scalar attribute comes back missing.
+ */
+const WITH_PATIENT = Query.select(["*", "patient.*"]);
+
 export class AppwriteRepository implements DataRepository {
   readonly kind = "appwrite" as const;
 
@@ -56,6 +72,19 @@ export class AppwriteRepository implements DataRepository {
         });
         const first = existing.users[0];
         if (first) return toUser(first);
+
+        /*
+         * Appwrite's 409 is "same id, email, *or* phone", and the Users service
+         * enforces phone uniqueness across the whole project. Reaching here
+         * means the email was free, so the collision is the phone number —
+         * somebody else's account. Left as a bare CONFLICT this surfaced as a
+         * submit that navigated nowhere and said nothing; a field error puts the
+         * message where the problem is. Note the demo repository has no such
+         * constraint: this is the backend's, not the app's.
+         */
+        const message =
+          "That phone number is already registered to another account.";
+        throw AppError.validation(message, { phone: message });
       }
 
       throw appError;
@@ -77,6 +106,25 @@ export class AppwriteRepository implements DataRepository {
 
   async registerPatient(input: RegisterPatientInput): Promise<Patient> {
     const { databases, ids } = getAppwrite();
+
+    /*
+     * `userId` is a plain string attribute, so Appwrite enforces neither of
+     * these itself: it would happily store a patient for an id that belongs to
+     * nobody, and a second patient for a user who already has one — after which
+     * `getPatientByUserId` silently returns whichever row it orders first. The
+     * demo repository rejects both, and the contract suite caught the
+     * divergence the moment it started running against a live project.
+     */
+    if (!(await this.getUser(input.userId))) {
+      throw AppError.notFound("The user for this registration");
+    }
+    if (await this.getPatientByUserId(input.userId)) {
+      throw new AppError(
+        "CONFLICT",
+        "This user has already completed registration.",
+      );
+    }
+
     try {
       const doc = await databases.createDocument({
         databaseId: ids.databaseId,
@@ -87,6 +135,27 @@ export class AppwriteRepository implements DataRepository {
       return toPatient(doc);
     } catch (error) {
       throw AppError.from(error);
+    }
+  }
+
+  /**
+   * By document id rather than user id. Not on `DataRepository` — nothing above
+   * this layer needs it; `createAppointment` does, to denormalise the patient's
+   * name and email onto the appointment.
+   */
+  private async getPatientById(patientId: string): Promise<Patient | null> {
+    const { databases, ids } = getAppwrite();
+    try {
+      const doc = await databases.getDocument({
+        databaseId: ids.databaseId,
+        collectionId: ids.patientCollectionId,
+        documentId: patientId,
+      });
+      return toPatient(doc);
+    } catch (error) {
+      const appError = AppError.from(error);
+      if (appError.code === "NOT_FOUND") return null;
+      throw appError;
     }
   }
 
@@ -111,6 +180,14 @@ export class AppwriteRepository implements DataRepository {
     input: CreateAppointmentInput,
   ): Promise<Appointment> {
     const { databases, ids } = getAppwrite();
+
+    // `CreateAppointmentInput` carries only `patientId`, but the denormalised
+    // search fields need the patient's name and email. Reading the patient here
+    // keeps that cost inside the adapter instead of widening the domain input
+    // for one backend's indexing limitation.
+    const patient = await this.getPatientById(input.patientId);
+    if (!patient) throw AppError.notFound("Patient");
+
     try {
       const doc = await databases.createDocument({
         databaseId: ids.databaseId,
@@ -126,6 +203,13 @@ export class AppwriteRepository implements DataRepository {
           reason: input.reason,
           note: input.note ?? "",
           cancellationReason: null,
+          patientName: patient.name,
+          searchText: appointmentSearchText({
+            patientName: patient.name,
+            patientEmail: patient.email,
+            primaryPhysician: input.primaryPhysician,
+            reason: input.reason,
+          }),
         },
       });
       return toAppointment(doc);
@@ -141,6 +225,7 @@ export class AppwriteRepository implements DataRepository {
         databaseId: ids.databaseId,
         collectionId: ids.appointmentCollectionId,
         documentId: appointmentId,
+        queries: [WITH_PATIENT],
       });
       return toAppointment(doc);
     } catch (error) {
@@ -155,12 +240,30 @@ export class AppwriteRepository implements DataRepository {
     changes: UpdateAppointmentInput,
   ): Promise<Appointment> {
     const { databases, ids } = getAppwrite();
+
+    // A reschedule changes the doctor, which is part of `searchText` — leaving
+    // it stale would make the admin search quietly wrong for exactly the rows
+    // that were most recently touched. Only re-read when a contributing field
+    // is actually in the changeset; a plain status flip skips the round trip.
+    const data: Record<string, unknown> = { ...changes };
+    if (changes.primaryPhysician !== undefined || changes.reason !== undefined) {
+      const existing = await this.getAppointment(appointmentId);
+      if (!existing) throw AppError.notFound("Appointment");
+
+      data.searchText = appointmentSearchText({
+        patientName: existing.patient.name,
+        patientEmail: existing.patient.email,
+        primaryPhysician: changes.primaryPhysician ?? existing.primaryPhysician,
+        reason: changes.reason ?? existing.reason,
+      });
+    }
+
     try {
       const doc = await databases.updateDocument({
         databaseId: ids.databaseId,
         collectionId: ids.appointmentCollectionId,
         documentId: appointmentId,
-        data: changes as Record<string, unknown>,
+        data,
       });
       return toAppointment(doc);
     } catch (error) {
@@ -176,18 +279,32 @@ export class AppwriteRepository implements DataRepository {
     const pageSize = Math.min(100, Math.max(1, query.pageSize ?? 10));
 
     try {
-      const queries: string[] = [];
+      const queries: string[] = [WITH_PATIENT];
 
       if (query.status && query.status !== "all") {
         queries.push(Query.equal("status", [query.status]));
       }
-      if (query.search) {
-        queries.push(Query.search("primaryPhysician", query.search));
-      }
+      // Searches the denormalised blob, not `primaryPhysician`: the contract is
+      // a match against patient name, patient email, doctor and reason, and
+      // Appwrite cannot reach the first two through the `patient` relationship.
+      // Trimmed for parity with the demo matcher, which ignores a blank needle.
+      const search = query.search?.trim();
+      if (search) queries.push(Query.search("searchText", search));
+
       if (query.from) queries.push(Query.greaterThanEqual("schedule", query.from));
       if (query.to) queries.push(Query.lessThanEqual("schedule", query.to));
 
-      const sortField = query.sort === "schedule" ? "schedule" : "$createdAt";
+      // `patient` sorts on the denormalised copy of the name for the same
+      // reason: Appwrite can order by a plain attribute but not across a
+      // relationship. Anything else falls back to creation date, matching the
+      // demo repository's default.
+      const sortField =
+        query.sort === "schedule"
+          ? "schedule"
+          : query.sort === "patient"
+            ? "patientName"
+            : "$createdAt";
+
       queries.push(
         query.direction === "asc"
           ? Query.orderAsc(sortField)
@@ -196,25 +313,46 @@ export class AppwriteRepository implements DataRepository {
       queries.push(Query.limit(pageSize));
       queries.push(Query.offset((page - 1) * pageSize));
 
-      const [pageResult, countsResult] = await Promise.all([
+      /*
+       * Counts describe the whole clinic, not the current page, so they need
+       * their own read — but one per status, asking for a single document and
+       * reading the server-computed `total`. The previous implementation pulled
+       * 1000 documents and tallied them in JS, which is Appwrite's per-request
+       * ceiling: past 1000 appointments the StatCards silently under-reported
+       * forever, with no error and no log. `idx_status` keeps these three as
+       * index lookups rather than collection scans.
+       */
+      const [pageResult, statusTotals] = await Promise.all([
         databases.listDocuments({
           databaseId: ids.databaseId,
           collectionId: ids.appointmentCollectionId,
           queries,
         }),
-        // Counts describe the whole clinic, not the current page, so they need
-        // their own unfiltered read.
-        databases.listDocuments({
-          databaseId: ids.databaseId,
-          collectionId: ids.appointmentCollectionId,
-          queries: [Query.limit(1000)],
-        }),
+        Promise.all(
+          APPOINTMENT_STATUSES.map(async (status) => {
+            const { total } = await databases.listDocuments({
+              databaseId: ids.databaseId,
+              collectionId: ids.appointmentCollectionId,
+              queries: [Query.equal("status", [status]), Query.limit(1)],
+            });
+            return [status, total] as const;
+          }),
+        ),
       ]);
+
+      const totals = Object.fromEntries(statusTotals) as Record<
+        AppointmentStatus,
+        number
+      >;
 
       return {
         documents: pageResult.documents.map(toAppointment),
         totalCount: pageResult.total,
-        counts: countByStatus(countsResult.documents.map(toAppointment)),
+        counts: {
+          scheduledCount: totals.scheduled,
+          pendingCount: totals.pending,
+          cancelledCount: totals.cancelled,
+        },
       };
     } catch (error) {
       throw AppError.from(error);
@@ -228,6 +366,7 @@ export class AppwriteRepository implements DataRepository {
         databaseId: ids.databaseId,
         collectionId: ids.appointmentCollectionId,
         queries: [
+          WITH_PATIENT,
           Query.equal("userId", [userId]),
           Query.orderDesc("schedule"),
           Query.limit(100),
