@@ -123,7 +123,12 @@ describe("textarea character counter", () => {
     // A live count would be announced on every keystroke, which is the
     // standard screen-reader failure mode for counters. The limit is carried
     // by the field description instead.
-    expect(screen.getByText("7 / 500")).toHaveAttribute("aria-hidden", "true");
+    const counter = screen.getByText("7 / 500");
+    expect(counter).toHaveAttribute("aria-hidden", "true");
+    // aria-hidden alone would not stop a future `aria-live` from re-announcing the
+    // count on every keystroke — the exact failure this element is shaped to avoid.
+    expect(counter).not.toHaveAttribute("aria-live");
+    expect(counter).not.toHaveAttribute("role");
     expect(screen.getByText("Maximum 500 characters.")).toBeInTheDocument();
   });
 });

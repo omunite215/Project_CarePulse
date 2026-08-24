@@ -272,7 +272,7 @@ export default function RegisterForm({ user }: { user: User }) {
               placeholder="Peanuts, penicillin, pollen"
               className="md:col-span-2"
               maxLength={500}
-              description="Include medicines, foods and anything else you react to. Leave blank if none."
+              description="Include medicines, foods and anything else you react to. Leave blank if none. Up to 500 characters."
             />
             <CustomFormField
               fieldType={FormFieldType.TEXTAREA}
@@ -282,7 +282,7 @@ export default function RegisterForm({ user }: { user: User }) {
               placeholder="Ibuprofen 200mg, Levothyroxine 50mcg"
               className="md:col-span-2"
               maxLength={500}
-              description="Name and dose, if you know it. An approximate list is still useful."
+              description="Name and dose, if you know it. An approximate list is still useful. Up to 500 characters."
             />
             <CustomFormField
               fieldType={FormFieldType.TEXTAREA}
@@ -292,7 +292,7 @@ export default function RegisterForm({ user }: { user: User }) {
               placeholder="Mother had brain cancer, father has hypertension"
               className="md:col-span-2"
               maxLength={500}
-              description="Conditions that run in your family, and who had them."
+              description="Conditions that run in your family, and who had them. Up to 500 characters."
             />
             <CustomFormField
               fieldType={FormFieldType.TEXTAREA}
@@ -302,7 +302,7 @@ export default function RegisterForm({ user }: { user: User }) {
               placeholder="Appendectomy in 2015, asthma diagnosis in childhood"
               className="md:col-span-2"
               maxLength={500}
-              description="Past operations, hospital stays or long-term conditions."
+              description="Past operations, hospital stays or long-term conditions. Up to 500 characters."
             />
           </section>
 
