@@ -90,3 +90,40 @@ describe("CustomFormField required semantics", () => {
     expect(screen.queryByText("(required)")).not.toBeInTheDocument();
   });
 });
+
+// Module scope, like `Harness` above: oxlint's consistent-function-scoping
+// flags a component defined inside `describe` because it captures nothing
+// from that scope, so nesting it there only costs a re-creation per call.
+function TextareaHarness() {
+  const form = useForm<PatientFormValues>({
+    defaultValues: { allergies: "Peanuts" },
+  });
+  return (
+    <Form {...form}>
+      <CustomFormField
+        fieldType={FormFieldType.TEXTAREA}
+        control={form.control}
+        name="allergies"
+        label="Allergies"
+        maxLength={500}
+        description="Maximum 500 characters."
+      />
+    </Form>
+  );
+}
+
+describe("textarea character counter", () => {
+  it("counts the current value against the limit", () => {
+    render(<TextareaHarness />);
+    expect(screen.getByText("7 / 500")).toBeInTheDocument();
+  });
+
+  it("hides the counter from assistive tech", () => {
+    render(<TextareaHarness />);
+    // A live count would be announced on every keystroke, which is the
+    // standard screen-reader failure mode for counters. The limit is carried
+    // by the field description instead.
+    expect(screen.getByText("7 / 500")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Maximum 500 characters.")).toBeInTheDocument();
+  });
+});

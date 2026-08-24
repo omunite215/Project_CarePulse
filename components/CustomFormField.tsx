@@ -26,6 +26,7 @@ import { DateField } from "@/components/fields/DateField";
 import { SelectField } from "@/components/fields/SelectField";
 import { FormFieldType } from "@/components/forms/field-types";
 import { useFieldRequired } from "@/components/forms/FieldRequirements";
+import { cn } from "@/lib/utils";
 
 /**
  * The form field renderer.
@@ -76,6 +77,7 @@ type FieldProps<T extends FieldValues> =
       fieldType: typeof FormFieldType.TEXTAREA;
       placeholder?: string;
       rows?: number;
+      maxLength?: number;
     })
   | (BaseProps<T> & {
       fieldType: typeof FormFieldType.PHONE_INPUT;
@@ -148,20 +150,42 @@ function RenderField<T extends FieldValues>({
         </div>
       );
 
-    case FormFieldType.TEXTAREA:
+    case FormFieldType.TEXTAREA: {
+      const value = typeof field.value === "string" ? field.value : "";
+      const max = props.maxLength;
+      const nearLimit = max !== undefined && value.length > max * 0.9;
+
       return (
-        <FormControl>
-          <Textarea
-            placeholder={props.placeholder}
-            rows={props.rows ?? 4}
-            disabled={props.disabled}
-            className="shad-textArea"
-            {...field}
-            value={field.value ?? ""}
-            aria-required={required || undefined}
-          />
-        </FormControl>
+        <>
+          <FormControl>
+            <Textarea
+              placeholder={props.placeholder}
+              rows={props.rows ?? 4}
+              disabled={props.disabled}
+              maxLength={max}
+              aria-required={required || undefined}
+              className="shad-textArea"
+              {...field}
+              value={value}
+            />
+          </FormControl>
+          {max !== undefined ? (
+            /* aria-hidden deliberately: a live region here announces the count
+               on every keystroke. The limit is stated once in the field's
+               description, which aria-describedby already links. */
+            <p
+              aria-hidden="true"
+              className={cn(
+                "text-12-regular text-right tabular-nums",
+                nearLimit ? "text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {value.length} / {max}
+            </p>
+          ) : null}
+        </>
       );
+    }
 
     case FormFieldType.PHONE_INPUT:
       return (
