@@ -14,8 +14,10 @@ describe("REGISTER_STEPS", () => {
    * it would never render, never validate, and submit as undefined.
    */
   it("covers every schema field exactly once", () => {
-    const assigned = REGISTER_STEPS.flatMap((step) => [...step.fields]).sort();
-    const schemaKeys = Object.keys(PatientFormValidation.shape).sort();
+    const assigned = REGISTER_STEPS.flatMap((step) => [
+      ...step.fields,
+    ]).toSorted();
+    const schemaKeys = Object.keys(PatientFormValidation.shape).toSorted();
 
     expect(assigned).toEqual(schemaKeys);
     expect(new Set(assigned).size).toBe(assigned.length);

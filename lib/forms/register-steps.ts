@@ -24,7 +24,12 @@ export interface RegisterStep {
  * summary and the error summary's links. Splitting those apart is how a field
  * ends up validated but unreachable, or reachable but never validated.
  */
-export const REGISTER_STEPS = [
+// Annotated (not `as const satisfies`) so every entry is contextually typed
+// as RegisterStep: satisfies only checks compatibility and keeps each
+// literal's own narrower shape, so an optional key present on one entry
+// (e.g. `hint`, `optional`) is absent from the others' types and reading it
+// off the union fails to compile.
+export const REGISTER_STEPS: readonly RegisterStep[] = [
   {
     id: "personal",
     title: "Personal information",
@@ -69,7 +74,7 @@ export const REGISTER_STEPS = [
     title: "Review and consent",
     fields: ["treatmentConsent", "disclosureConsent", "privacyConsent"],
   },
-] as const satisfies readonly RegisterStep[];
+];
 
 export const REGISTER_STEP_IDS = REGISTER_STEPS.map((step) => step.id);
 
