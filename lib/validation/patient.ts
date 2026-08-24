@@ -1,3 +1,4 @@
+import type { DefaultValues } from "react-hook-form";
 import { z } from "zod";
 
 import { GENDERS } from "@/lib/data/types";
@@ -79,13 +80,25 @@ export const PatientFormValidation = z.object({
 
 export type PatientFormValues = z.infer<typeof PatientFormValidation>;
 
-/** Field defaults for the register form. Consents start unticked by design. */
-export const PatientFormDefaultValues: PatientFormValues = {
+/**
+ * Field defaults for the register form.
+ *
+ * Typed `DefaultValues<PatientFormValues>` rather than `PatientFormValues`,
+ * because three fields deliberately start empty and the output type cannot
+ * hold `undefined` for a required key.
+ *
+ * Nothing here answers a question on the patient's behalf. `birthDate` used to
+ * default to today and `gender` to "male" — both then submitted as fact by
+ * anyone who did not notice. `identificationType` is `""` rather than
+ * `undefined` because SelectField maps a falsy value to "no selection" and
+ * renders the placeholder.
+ */
+export const PatientFormDefaultValues: DefaultValues<PatientFormValues> = {
   name: "",
   email: "",
   phone: "",
-  birthDate: new Date(Date.now()),
-  gender: "male",
+  birthDate: undefined,
+  gender: undefined,
   address: "",
   occupation: "",
   emergencyContactName: "",
@@ -97,7 +110,7 @@ export const PatientFormDefaultValues: PatientFormValues = {
   currentMedication: "",
   familyMedicalHistory: "",
   pastMedicalHistory: "",
-  identificationType: "Birth Certificate",
+  identificationType: "",
   identificationNumber: "",
   identificationDocument: [],
   treatmentConsent: false,

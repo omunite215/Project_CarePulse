@@ -62,6 +62,9 @@ describe("PatientFormValidation consent", () => {
     name: "Jane Cooper",
     email: "jane@example.com",
     phone: "+12025550143",
+    // Stated explicitly: the defaults deliberately no longer supply these.
+    birthDate: new Date("1991-04-18"),
+    gender: "female" as const,
     address: "418 Maple Street",
     occupation: "Engineer",
     emergencyContactName: "Michael Cooper",
@@ -130,10 +133,30 @@ describe("PatientFormValidation consent", () => {
     ).toBe(false);
   });
 
-  it("ships defaults that leave every consent unticked", () => {
+  it("ships defaults that pre-answer nothing", () => {
     expect(PatientFormDefaultValues.treatmentConsent).toBe(false);
     expect(PatientFormDefaultValues.disclosureConsent).toBe(false);
     expect(PatientFormDefaultValues.privacyConsent).toBe(false);
+
+    /*
+     * These three used to arrive answered. `birthDate` defaulted to today —
+     * and because DateField renders any truthy value as a formatted date, the
+     * field looked filled in, the placeholder never showed, and
+     * `date <= new Date()` accepted it. A patient who ignored the field was
+     * registered as born today. `gender` defaulted to "male" and
+     * `identificationType` to "Birth Certificate", in a section that is
+     * entirely optional.
+     */
+    expect(PatientFormDefaultValues.birthDate).toBeUndefined();
+    expect(PatientFormDefaultValues.gender).toBeUndefined();
+    expect(PatientFormDefaultValues.identificationType).toBe("");
+  });
+
+  it("rejects the shipped defaults as an incomplete submission", () => {
+    // The whole point: defaults must not be a valid patient record.
+    expect(PatientFormValidation.safeParse(PatientFormDefaultValues).success).toBe(
+      false,
+    );
   });
 });
 
