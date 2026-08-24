@@ -79,7 +79,15 @@
       "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "scripts/**"],
       "rules": {
         "no-console": "off",
-        "typescript/no-explicit-any": "off"
+        "typescript/no-explicit-any": "off",
+
+        // Sequencing is the point in both places, so Promise.all is not the
+        // fix the rule thinks it is: Appwrite needs each attribute to settle
+        // before the index that references it, deleting a page of documents
+        // has to finish before the next page can be listed, and a seeding loop
+        // that creates rows in a known order is what makes sort assertions
+        // meaningful.
+        "no-await-in-loop": "off"
       }
     },
     {

@@ -13,8 +13,17 @@ export default defineConfig({
        * `react-server` export condition, which Vitest does not. Aliasing to the
        * package's own no-op entry keeps the guard meaningful in the real build
        * while letting the modules be unit tested.
+       *
+       * It has to be a file path, not the bare specifier `server-only/empty`:
+       * the package's `exports` map declares only `"."`, so any subpath is
+       * unresolvable. Adding `react-server` to `resolve.conditions` would fix
+       * the import too, but it would also swap React itself over to its server
+       * build and break the component tests.
        */
-      "server-only": "server-only/empty",
+      "server-only": path.resolve(
+        import.meta.dirname,
+        "node_modules/server-only/empty.js",
+      ),
     },
   },
   test: {
