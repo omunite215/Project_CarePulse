@@ -97,6 +97,7 @@ type FieldProps<T extends FieldValues> =
       physician?: string;
       fromDate?: Date;
       toDate?: Date;
+      variant?: "default" | "birthdate";
     })
   | (BaseProps<T> & {
       fieldType: typeof FormFieldType.SELECT;
@@ -234,6 +235,7 @@ function RenderField<T extends FieldValues>({
           physician={props.physician}
           fromDate={props.fromDate}
           toDate={props.toDate}
+          variant={props.variant}
           required={required}
         />
       );

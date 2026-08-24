@@ -27,6 +27,12 @@ interface DateFieldProps {
   physician?: string;
   fromDate?: Date;
   toDate?: Date;
+  /**
+   * `birthdate` swaps the month chevrons for month and year dropdowns. The
+   * appointment picker keeps the default: a year dropdown spanning a booking
+   * window of a few weeks would be absurd.
+   */
+  variant?: "default" | "birthdate";
 }
 
 /**
@@ -47,6 +53,7 @@ export function DateField({
   physician,
   fromDate,
   toDate,
+  variant,
 }: DateFieldProps) {
   const selected = parseDate(value);
   const [open, setOpen] = useState(false);
@@ -129,6 +136,12 @@ export function DateField({
           selected={selected}
           onSelect={pickDay}
           autoFocus
+          captionLayout={variant === "birthdate" ? "dropdown" : "label"}
+          /* Without navLayout the legacy layout is kept, and DayPicker's own
+             docs note the tab order then stops matching the visual order once
+             dropdowns are present — an accessibility regression introduced by
+             the fix itself. */
+          navLayout={variant === "birthdate" ? "after" : undefined}
           startMonth={fromDate}
           endMonth={toDate}
           disabled={

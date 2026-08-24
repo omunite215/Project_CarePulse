@@ -136,6 +136,10 @@ export default function RegisterForm({ user }: { user: User }) {
               name="birthDate"
               label="Date of birth"
               placeholder="Select your date of birth"
+              variant="birthdate"
+              /* An explicit floor: DayPicker's dropdown default is 100 years,
+                 which excludes living centenarians. */
+              fromDate={new Date(new Date().getFullYear() - 120, 0, 1)}
               toDate={new Date()}
             />
 

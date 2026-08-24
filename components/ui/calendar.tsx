@@ -48,7 +48,15 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
         [UI.Months]: "relative flex flex-col gap-4",
         [UI.Month]: "flex w-full flex-col gap-3",
         [UI.MonthCaption]: "flex h-9 items-center justify-center",
-        [UI.CaptionLabel]: "text-14-medium text-foreground",
+        /* `inline-flex items-center whitespace-nowrap` mirrors DayPicker's own
+           (unimported) stylesheet rule for `.rdp-caption_label`. This same
+           classname is reused, per dropdown, for the aria-hidden span that
+           pairs the selected value with a chevron (see the note on
+           UI.Dropdown below) — without it that span is a plain inline span
+           sized only by its text, so the chevron has no room left on the
+           line and wraps underneath instead of sitting beside the value. */
+        [UI.CaptionLabel]:
+          "inline-flex items-center whitespace-nowrap text-14-medium text-foreground",
         [UI.Nav]: "absolute inset-x-0 top-0 flex items-center justify-between",
         [UI.PreviousMonthButton]:
           "inline-flex size-8 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40",
@@ -69,6 +77,26 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
         [DayFlag.outside]: "[&>button]:text-muted-foreground [&>button]:opacity-60",
         [DayFlag.disabled]: "[&>button]:text-muted-foreground [&>button]:opacity-40",
         [DayFlag.hidden]: "invisible",
+        /* DayPicker renders native <select>s for captionLayout="dropdown".
+           This file does not import the package stylesheet — see the note
+           above — so without these they inherit nothing and read as OS
+           chrome dropped into a themed dialog. */
+        [UI.Dropdowns]: "flex items-center justify-center gap-2",
+        [UI.DropdownRoot]: "relative inline-flex items-center",
+        /* For each dropdown, DayPicker always renders both the <select> below
+           AND a sibling aria-hidden span carrying the same classNames as
+           UI.CaptionLabel (e.g. "August") plus a chevron — that pair is the
+           library's own visible affordance, meant to sit on top of an
+           invisible, full-size <select> that receives the actual clicks and
+           opens the native option list. That's exactly what @daypicker/react's
+           own (unimported) stylesheet does to its `.rdp-dropdown` class:
+           `opacity: 0; position: absolute; inset: 0`. Style the <select> as a
+           normal visible box instead — the brief's original approach — and
+           both it and the label span render at once, each showing "August"
+           or "2026", which is what a screenshot caught: doubled text with a
+           stray chevron. Reproducing the library's own invisible-overlay
+           technique with our own tokens is what actually fixes it. */
+        [UI.Dropdown]: "absolute inset-0 z-10 cursor-pointer appearance-none opacity-0",
         ...classNames,
       }}
       components={{ Chevron: CalendarChevron }}
