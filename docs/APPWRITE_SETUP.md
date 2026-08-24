@@ -1,5 +1,20 @@
 # Appwrite provisioning guide
 
+> **Amended after provisioning against a live Appwrite Cloud 1.9.6 project.** Nine things this
+> document asserted from code alone turned out to be wrong or incomplete against a running server;
+> each is corrected in place below and listed in [§10 Corrections](#10-corrections-from-the-live-run).
+> The two most important:
+>
+> - **A relationship does not expand on read.** §2.2 quoted the code's own comment as evidence that
+>   Appwrite "expands it into a full nested document on read". It does not — `listDocuments` and
+>   `getDocument` both return `patient` as a bare id string unless the read passes
+>   `Query.select(["*", "patient.*"])`. This rendered the admin table's Patient column blank.
+> - **Provisioning is now a script, not a checklist.** `pnpm appwrite:plan` diffs a live project
+>   against the schema the code needs; `pnpm appwrite:provision` applies the difference. It is
+>   idempotent, so re-running a converged project is a no-op. Prefer it to the console steps in §1 —
+>   a checklist cannot be diffed, and the project this was first pointed at had drifted badly from
+>   this document while appearing "fully provisioned".
+
 Everything in this document is derived from the code that actually talks to Appwrite:
 `lib/data/types.ts`, `lib/data/appwrite/mappers.ts`, `lib/data/appwrite/appwrite.repository.ts`,
 `lib/data/appwrite/client.ts`, `lib/data/repository.ts`, `lib/env.ts`, `.env.example`,
@@ -21,6 +36,28 @@ exclusively use this deprecated `Databases`/`Storage`/`Users` surface — there 
 import anywhere in the codebase. This document therefore provisions classic **Collections**,
 **Documents**, **Attributes** and **Indexes**, because that is what the shipped adapter calls,
 not the newer Tables/Columns/Rows model. See §9 for the forward-compatibility risk this implies.
+
+## 0. The short version
+
+```bash
+pnpm appwrite:plan        # diff a live project against what the code needs
+pnpm appwrite:provision   # apply the difference
+pnpm test:appwrite        # run the repository contract against the live project
+```
+
+`scripts/appwrite-provision.mjs` holds the schema as data and reconciles it: it creates what is
+missing, grows string attributes that are too small, recreates only on a genuine type change, deletes
+attributes not in the spec, builds the indexes once their attributes are `available`, empties the
+collection permissions, and corrects the bucket. Sizes in its `SPEC` are *minimums* — a live
+attribute that is larger counts as satisfied, because Appwrite can grow a string attribute but never
+shrink one.
+
+It needs a **provisioning** key (`collections.write`, `attributes.write`, `indexes.write`,
+`buckets.write`), which per [§5](#5-api-key-scopes) is deliberately more than the runtime key should
+carry. The three collection/database objects themselves still have to exist first — the script
+reports and exits rather than creating them, so the ids in `.env` stay authoritative.
+
+The sections below remain the reference for *why* each attribute, index and permission is what it is.
 
 ## 1. What to create, in order
 
@@ -150,31 +187,63 @@ Source: `Appointment` interface (`types.ts:70-82`), `toAppointment`
 | `reason` | string | 500 | Yes | — | No |
 | `note` | string | 500 | No | `""` | No |
 | `cancellationReason` | string | 500 | No | null | No |
+| `searchText` | string | 1000 | No | null | No |
+| `patientName` | string | 100 | No | null | No |
 
 `id` and `createdAt` map to `$id`/`$createdAt` (`mappers.ts:68,79`) — not custom attributes.
+
+`searchText` and `patientName` are the denormalised copies that make §6.1 and §6.3 solvable. Both are
+app-maintained, so both are optional: a document written by anything other than this app simply will
+not be searchable or sortable by patient. `searchText` is 1000 because its four inputs cap at
+50 (name) + 320 (email) + 100 (physician) + 500 (reason) + separators = 973, and
+`appointmentSearchText()` truncates to the attribute size rather than letting a long email plus a
+long reason turn a booking into a 400. `patientName` is 100 rather than 320 so it stays under
+InnoDB's 768-byte index key limit at utf8mb4 — it carries only the name, which validation caps at 50.
 
 Per-attribute justification:
 
 - **`userId`** — written directly at `appwrite.repository.ts:120` (`userId: input.userId`), read
   with `str()` (`mappers.ts:69`), `Appointment.userId: string` (`types.ts:72`, non-null). Same
   36-char Appwrite-ID reasoning as the Patient collection's `userId`.
-- **`patient` — this is a relationship, not a plain string.** The code says so explicitly:
-  > `// 'patient' is a relationship attribute, so Appwrite expands it into a full nested document
-  > on read but expects a bare id string on write.` — `mappers.ts:63-64`
-  and again at the write site:
-  > `// Relationship attribute: written as an id, read back expanded.` — `appwrite.repository.ts:121-122`
+- **`patient` — this is a relationship, not a plain string.** On create the code writes
+  `patient: input.patientId` — a bare patient document ID. Configure it as: related collection
+  `patient`, relationship type **Many to One** (many appointments can reference the same patient —
+  nothing in the code enforces one appointment per patient), key `patient`, one-way,
+  `onDelete: setNull`.
 
-  On create, the code writes `patient: input.patientId` (`appwrite.repository.ts:122`) — a bare
-  patient document ID — and on read, `doc.patient` arrives as an expanded nested document or
-  `null` (`mappers.ts:65,70-72`). Configure it in the Appwrite console as: related collection
-  `patient`, relationship type **Many to One** (many appointments can reference the same patient
-  — nothing in the code enforces one appointment per patient), key `patient`. Two-way-ness and
-  on-delete behaviour are not settled by the code (see §9) because `DataRepository`
-  (`lib/data/repository.ts`) has no delete method at all — deletion is never exercised.
-  Required: the create path always supplies a patient ID (`appwrite.repository.ts:122`); the
-  mapper's `placeholderPatient()` fallback (`mappers.ts:127-156`) exists only to keep the admin
-  table rendering if an expansion fails at read time (e.g. a deleted patient document), not
-  because the attribute is optional by design.
+  **Corrected: it does not expand on read.** This document previously quoted the code's own comment
+  as evidence that it does:
+
+  > `// 'patient' is a relationship attribute, so Appwrite expands it into a full nested document
+  > on read but expects a bare id string on write.` — the old `mappers.ts:63-64`
+
+  Verified against Appwrite Cloud 1.9.6, that is false for two of the four read paths:
+
+  | Call | `patient` comes back as |
+  |---|---|
+  | `createDocument` | expanded document |
+  | `updateDocument` | expanded document |
+  | `getDocument` | **bare id string** |
+  | `listDocuments` | **bare id string** |
+  | `listDocuments` with `Query.select(["*"])` | **bare id string** |
+  | `listDocuments` with `Query.select(["*", "patient.*"])` | expanded document |
+
+  So every read path that needs the patient must pass `Query.select(["*", "patient.*"])` — the
+  `"*"` is required alongside it, or the projection narrows to the relationship and every scalar
+  attribute comes back missing. The adapter now does this in `getAppointment`,
+  `listAppointments` and `listAppointmentsByUser`, and `getBookedSlots` deliberately does not,
+  since it reads only `schedule`.
+
+  Left unfixed, the consequence was silent: the old `toAppointment` cast the id string straight to a
+  document, every `str()` lookup on it returned `""`, and the admin table's Patient column, the
+  patient's own appointment list and the CSV export all rendered blank with no error logged
+  anywhere. `toAppointment` now type-checks the shape and degrades to `placeholderPatient()`
+  ("Unknown patient") instead, so a future read path that forgets to select is visible rather than
+  blank.
+
+  `required` is not expressible here: `createRelationshipAttribute` takes no `required` parameter
+  (`node_modules/node-appwrite/dist/services/databases.d.ts:1461-1470`), so the `"required": true`
+  in this document's §7 `appwrite.json` is inert.
 - **`schedule`** — ISO string always supplied (`values.schedule.toISOString()`,
   `appwrite.repository.ts:124`), read via `iso()` (`mappers.ts:74`).
 - **`status`** — `AppointmentStatus` enum (`types.ts:18-24`); always supplied on create/update
@@ -211,17 +280,23 @@ Every index below is required by a specific `Query.*` call in
 
 | Key | Type | Attributes | Order | Cited by |
 |---|---|---|---|---|
-| `idx_status` | key | `status` | ASC | `listAppointments` status filter, `appwrite.repository.ts:182` (`Query.equal("status", [query.status])`); also `getBookedSlots`, `:254` (`Query.notEqual("status", ["cancelled"])`); also required by the count-query fix in §6 |
-| `idx_primaryPhysician_search` | **fulltext** | `primaryPhysician` | — | `listAppointments` search, `appwrite.repository.ts:185` (`Query.search("primaryPhysician", query.search)`) |
-| `idx_primaryPhysician_schedule` | key | `primaryPhysician`, `schedule` | ASC, ASC | `getBookedSlots`, `appwrite.repository.ts:251-253` (`Query.equal("primaryPhysician", …)` + `Query.greaterThanEqual`/`lessThanEqual("schedule", …)`) |
-| `idx_schedule` | key | `schedule` | ASC | `listAppointments` date-range filters, `appwrite.repository.ts:187-188`, and `Query.orderAsc`/`orderDesc(sortField)` when `sortField === "schedule"`, `:190-195` |
-| `idx_userId_schedule` | key | `userId`, `schedule` | ASC, DESC | `listAppointmentsByUser`, `appwrite.repository.ts:231-233` (`Query.equal("userId", [userId])` + `Query.orderDesc("schedule")`) |
+| `idx_status` | key | `status` | ASC | `listAppointments` status filter (`Query.equal("status", …)`); `getBookedSlots` (`Query.notEqual("status", ["cancelled"])`); and the three per-status count queries from the §6.2 fix |
+| `idx_searchText` | **fulltext** | `searchText` | — | `listAppointments` search: `Query.search("searchText", search)` |
+| `idx_patientName` | key | `patientName` | ASC | `sort=patient`: `Query.orderAsc`/`orderDesc("patientName")` |
+| `idx_primaryPhysician_schedule` | key | `primaryPhysician`, `schedule` | ASC, ASC | `getBookedSlots` (`Query.equal("primaryPhysician", …)` + `Query.greaterThanEqual`/`lessThanEqual("schedule", …)`) |
+| `idx_schedule` | key | `schedule` | ASC | `listAppointments` date-range filters, and `Query.orderAsc`/`orderDesc` when `sortField === "schedule"` |
+| `idx_userId_schedule` | key | `userId`, `schedule` | ASC, DESC | `listAppointmentsByUser` (`Query.equal("userId", [userId])` + `Query.orderDesc("schedule")`) |
 
-**`idx_primaryPhysician_search` must be created as `fulltext`, not `key`.** Appwrite's
-`Query.search()` only works against a fulltext index; a `key` index on the same attribute
-supports `Query.equal`/`Query.notEqual` (which `idx_primaryPhysician_schedule` already covers for
-`getBookedSlots`) but returns no results for `Query.search`, and the search box would silently
-stop matching doctors with no error.
+**`idx_searchText` must be created as `fulltext`, not `key`.** Appwrite's `Query.search()` only works
+against a fulltext index — and it does not fail soft: it returns
+`400 general_query_invalid — Searching by attribute "…" requires a fulltext index`. That is how the
+contract suite first proved §6.1 was unfixed.
+
+**`idx_primaryPhysician_search` is deliberately gone.** This document previously required a fulltext
+index on `primaryPhysician`. Search now runs against `searchText`, which already contains the
+physician name, so that index would be dead weight — and §3's own claim that "none are speculative"
+would stop being true. `getBookedSlots`'s `Query.equal("primaryPhysician", …)` is served by
+`idx_primaryPhysician_schedule`.
 
 The default `$createdAt` sort path (`sortField` falls back to `"$createdAt"` at
 `appwrite.repository.ts:190` for anything other than `"schedule"`) needs no custom index —
@@ -296,12 +371,38 @@ fetching through the SDK, `client.ts:69-72`), `messages.read`, `topics.*`, `targ
 **Provisioning is a separate credential.** Creating the database, collections, attributes,
 indexes and bucket themselves (§1–§4) requires `databases.write`, `collections.write`,
 `attributes.write`, `indexes.write`, `buckets.write` — but that work is done once, via
-`appwrite login`/`appwrite push` or the console, and should not be granted to the long-lived key
-that sits in `.env.local`. Keep the two credentials separate.
+`pnpm appwrite:provision`, `appwrite push`, or the console, and should not be granted to the
+long-lived key that sits in `.env.local`. Keep the two credentials separate.
 
-## 6. Two known adapter bugs
+**Add `collections.read` and `buckets.read` to the provisioning key too.** Reading the current schema
+is how `pnpm appwrite:plan` produces a diff instead of blindly re-issuing writes —
+`databases.getCollection` and `storage.getBucket` need them. The table above is still correct that the
+*runtime* key needs neither.
 
-These are documented, not fixed, per the scope of this task.
+## 6. Adapter bugs — all fixed
+
+All three are now fixed and covered by tests. Each subsection keeps its original analysis, because the
+reasoning is what makes the schema in §2–§3 make sense; the outcome is recorded at the end of each.
+
+Two more divergences of the same class surfaced the moment the contract suite ran against a live
+project, and are fixed alongside them:
+
+- **`registerPatient` accepted a patient for a user that does not exist.** `userId` is a plain string
+  attribute, so Appwrite enforces nothing; the demo repository throws `NOT_FOUND`. The action layer
+  happened to guard it (`patient.actions.ts:74-75`), so this was latent rather than live.
+- **`registerPatient` accepted a *second* patient for the same user**, after which
+  `getPatientByUserId` silently returns whichever row Appwrite orders first. The demo repository
+  throws `CONFLICT`. The adapter now checks both, at the cost of two reads on a once-per-patient path.
+
+And one live-path failure with no demo equivalent:
+
+- **A duplicate phone number produced a dead submit.** Appwrite's Users service enforces uniqueness on
+  phone as well as email (`409 user_already_exists` — "same id, email, or phone"). `createUser`'s
+  conflict branch only resumed by *email*, so a new email with a taken phone rethrew a bare
+  `CONFLICT`: the onboarding form navigated nowhere and displayed nothing. It now raises a
+  field-targeted validation error on `phone`. **This is a genuine divergence that remains** — the demo
+  repository has no phone-uniqueness constraint at all, and was left alone deliberately, because demo
+  mode has to keep behaving exactly as the E2E and screenshot suites expect. Worth revisiting.
 
 ### 6.1 Search divergence
 
@@ -372,6 +473,13 @@ requires:
    whoever adds one later), every appointment referencing that patient would need its
    `searchText` recomputed too, or the search index goes stale.
 
+**Fixed as described.** `createAppointment` reads the patient by document id to compute both fields —
+that read stays inside the adapter rather than widening `CreateAppointmentInput` for one backend's
+indexing limitation. `updateAppointment` recomputes `searchText` only when `primaryPhysician` or
+`reason` is in the changeset, so a plain status flip skips the extra round trip. Covered by four
+contract cases (name, email, doctor, reason) plus a no-match case, all of which failed against the
+live project beforehand.
+
 ### 6.2 Status counts don't scale
 
 ```ts
@@ -432,6 +540,14 @@ const counts = {
 This is exactly why `idx_status` (§3) needs to exist — three `Query.equal("status", …)` scans
 per dashboard load should hit an index, not a full collection scan.
 
+**Fixed as described.** Note this one is *not* provable by the repository contract suite: fetching
+1000 rows and tallying them gives the right answer until the collection holds more than 1000, and
+seeding 1001 appointments per run is not a worthwhile trade. The defect is in the query, so
+`tests/appwrite.queries.test.ts` asserts the query instead — offline, against a stubbed client, so it
+runs in `pnpm check` without credentials. It checks that no read requests more rows than the caller
+asked for, that each count query carries its own status filter and nothing else, and that counts come
+from `.total` rather than from returned documents. Verified to fail against the pre-fix adapter.
+
 ### 6.3 `sort=patient` is silently ignored
 
 A third divergence of the same class as §6.1, not listed in the original brief. Found while
@@ -462,6 +578,17 @@ not two — which is why they should be done together rather than sequenced.
 **Do not fix this before the search work.** A standalone fix would either duplicate the
 denormalisation or narrow the API to drop `"patient"` from the enum, and the latter is a silent
 capability regression for any client already sending it.
+
+**Fixed together with §6.1, as recommended.** `patientName` carries a `key` index and serves
+`Query.orderAsc`/`orderDesc` directly. The contract case creates its two patients in reverse
+alphabetical order, so an implementation that quietly falls back to `$createdAt` returns the opposite
+answer rather than an accidentally-correct one.
+
+One thing worth knowing: **there is no sort control in the admin UI.**
+`components/table/features.ts` deliberately leaves `rowSortingFeature` off so the table cannot sort
+just the ten rows on screen, and no column header is clickable. `sort` is a wire capability of
+`/api/v1/appointments` only — which is what `lib/api/schemas.ts:19` has always described, but it means
+fixing this changed nothing an operator can currently reach through the interface.
 
 ## 7. `appwrite.json`
 
@@ -496,7 +623,7 @@ Replace `PROJECT_ID_HERE` with your real project ID before running `appwrite pus
       "attributes": [
         { "key": "userId", "type": "string", "size": 36, "required": true, "array": false, "default": null },
         { "key": "name", "type": "string", "size": 50, "required": true, "array": false, "default": null },
-        { "key": "email", "type": "string", "size": 320, "required": true, "array": false, "default": null },
+        { "key": "email", "type": "string", "format": "email", "required": true, "array": false, "default": null },
         { "key": "phone", "type": "string", "size": 20, "required": true, "array": false, "default": null },
         { "key": "birthDate", "type": "datetime", "required": true, "array": false, "default": null },
         { "key": "gender", "type": "string", "format": "enum", "elements": ["male", "female", "other"], "size": 6, "required": true, "array": false, "default": null },
@@ -535,12 +662,10 @@ Replace `PROJECT_ID_HERE` with your real project ID before running `appwrite pus
         {
           "key": "patient",
           "type": "relationship",
-          "required": true,
           "array": false,
           "relatedCollection": "patient",
           "relationType": "manyToOne",
-          "twoWay": true,
-          "twoWayKey": "appointments",
+          "twoWay": false,
           "onDelete": "setNull",
           "side": "parent"
         },
@@ -549,11 +674,14 @@ Replace `PROJECT_ID_HERE` with your real project ID before running `appwrite pus
         { "key": "status", "type": "string", "format": "enum", "elements": ["pending", "scheduled", "cancelled"], "size": 9, "required": true, "array": false, "default": null },
         { "key": "reason", "type": "string", "size": 500, "required": true, "array": false, "default": null },
         { "key": "note", "type": "string", "size": 500, "required": false, "array": false, "default": "" },
-        { "key": "cancellationReason", "type": "string", "size": 500, "required": false, "array": false, "default": null }
+        { "key": "cancellationReason", "type": "string", "size": 500, "required": false, "array": false, "default": null },
+        { "key": "searchText", "type": "string", "size": 1000, "required": false, "array": false, "default": null },
+        { "key": "patientName", "type": "string", "size": 100, "required": false, "array": false, "default": null }
       ],
       "indexes": [
         { "key": "idx_status", "type": "key", "attributes": ["status"], "orders": ["ASC"] },
-        { "key": "idx_primaryPhysician_search", "type": "fulltext", "attributes": ["primaryPhysician"], "orders": ["ASC"] },
+        { "key": "idx_searchText", "type": "fulltext", "attributes": ["searchText"] },
+        { "key": "idx_patientName", "type": "key", "attributes": ["patientName"], "orders": ["ASC"] },
         { "key": "idx_primaryPhysician_schedule", "type": "key", "attributes": ["primaryPhysician", "schedule"], "orders": ["ASC", "ASC"] },
         { "key": "idx_schedule", "type": "key", "attributes": ["schedule"], "orders": ["ASC"] },
         { "key": "idx_userId_schedule", "type": "key", "attributes": ["userId", "schedule"], "orders": ["ASC", "DESC"] }
@@ -603,11 +731,13 @@ subset of them is present without the rest, rather than silently falling back to
 
 ## 9. Open questions
 
-Things this document could not settle from code alone:
+Things this document could not settle from code alone. Items 1, 6, 7 and 12 are now **settled** by the
+live run; the rest still stand.
 
-1. **`email` max length** — `emailSchema` is `z.email({...})` with no `.max()`
-   (`lib/validation/primitives.ts:18`). No validation found. Recommended 320 (RFC 5321's mailbox
-   length ceiling), not code-derived.
+1. ~~**`email` max length**~~ — **settled.** Provisioned as Appwrite's `email` *format* attribute
+   rather than a sized string. It validates at the storage layer, which `z.email()` cannot do for a
+   write that bypasses the form, and it removes the need to guess a ceiling. The previous
+   recommendation of 320 was explicitly not code-derived.
 2. **`primaryPhysician` max length** (both collections) — both schemas only enforce
    `.min(2, {...})` (`patient.ts:47`; `appointment.ts:3`). No max found. Recommended 100.
 3. **`identificationType` max length** — `z.string().optional()` with no `.max()`
@@ -619,17 +749,14 @@ Things this document could not settle from code alone:
    creation at `appwrite.repository.ts:275`), not on an application-level check.
 5. **`identificationDocumentUrl` max length** — no validation in code; it's a constructed URL
    (`client.ts:69-72`). Recommended 2048 as a generous, conventional URL-length ceiling.
-6. **`patient` relationship on-delete behaviour** — `DataRepository` (`lib/data/repository.ts`)
-   has no delete method for either patients or appointments, so `onDelete` is never exercised by
-   the running app. This document's `appwrite.json` picks `setNull` so a manual deletion in the
-   console doesn't hard-fail, but that is an operator policy choice, not something the code
-   settles.
-7. **`patient` relationship two-way-ness** — the code only ever traverses appointment → patient
-   (`mappers.ts:65,70-72`); nothing reads a patient's appointments through the relationship (the
-   reverse lookup instead goes through `userId` equality, `appwrite.repository.ts:224-240`). A
-   one-way relationship would satisfy the code as written; this document configures it two-way
-   because that's the Appwrite console default and costs nothing extra, but a one-way
-   relationship is an equally valid, code-consistent choice.
+6. **`patient` relationship on-delete behaviour** — **settled as `setNull`**, and now load-bearing
+   rather than arbitrary: `toAppointment` degrades a missing relationship to
+   `placeholderPatient()`, so a console deletion leaves a visibly-degraded admin row instead of
+   failing the read. `DataRepository` still has no delete method, so the app never triggers it.
+7. ~~**`patient` relationship two-way-ness**~~ — **settled as one-way.** The code only ever traverses
+   appointment → patient; the reverse lookup goes through `userId` equality. Two-way would add an
+   `appointments` attribute to the patient collection that nothing reads and this document never
+   specified.
 8. **Bucket encryption / antivirus / compression** — no requirement found in code. Recommended
    Appwrite's defaults (encryption on, antivirus on where available, compression `none`).
 9. **`appwrite.json` envelope shape** — its attribute/index *content* is cross-checked against
@@ -649,6 +776,33 @@ Things this document could not settle from code alone:
     ID in §7 (`carepulse`, `patient`, `appointment`, `identification-documents`) is this
     document's suggestion, not a code requirement — name them however you like, then copy
     whatever you actually created into `.env.local`.
-12. **Live Appwrite server version** — not independently verified against a running server; this
-    document relies on `.env.example:18-19`'s statement that `node-appwrite@28` targets Appwrite
-    Server 1.9.x.
+12. ~~**Live Appwrite server version**~~ — **settled.** Verified against Appwrite Cloud, which reports
+    `1.9.6` in its error payloads. `node-appwrite@28` works against it, deprecations and all.
+
+## 10. Corrections from the live run
+
+What this document got wrong when it was derived from code alone. Recorded rather than quietly edited,
+because the pattern is the lesson: every one of these was a confident claim with a code citation
+behind it, and the citation was to a *comment* or to an assumption, not to observed behaviour.
+
+| § | Claim | Reality |
+|---|---|---|
+| 2.2 | A relationship "expands into a full nested document on read" — quoting the code's own comment | Bare id string from `getDocument` and `listDocuments`; expands only with `Query.select(["*", "patient.*"])` |
+| 2.2 | The `patient` relationship can be `required: true` | `createRelationshipAttribute` has no `required` parameter; the flag is inert |
+| 2.1 | `email` should be `string(320)` | Provisioned as the `email` format type; validates server-side and needs no guessed ceiling |
+| 3 | `idx_primaryPhysician_search` (fulltext on `primaryPhysician`) is required and "not speculative" | Made dead by the §6.1 fix; removed |
+| 3 | Five appointment indexes | Six: `idx_searchText` and `idx_patientName` added, `idx_primaryPhysician_search` removed |
+| 5 | Runtime key needs no `collections.read` | `getCollection` needs it, so any drift check or provisioning run needs a second, broader key — as §5 already advised for writes |
+| 7 | `appwrite.json` sizes are the target | They are *minimums*. Appwrite can grow a string attribute but never shrink one, so a live attribute that is larger is already satisfied — treating that as drift means nine needless delete-and-recreates |
+| — | Attribute `update` endpoints behave like `create` | They require `default` in the body even when null. Omitting it fails with `Missing required parameter: "xdefault"`, while a required attribute may not carry a non-null default; `null` satisfies both |
+| — | A fixed test phone number is reusable | Appwrite's Users service enforces phone uniqueness project-wide, so a fixed number works exactly once per project |
+
+Two further notes for whoever runs this next:
+
+- **Appwrite's 409 on `users.create` is ambiguous** — "same id, email, or phone". Any resume-on-conflict
+  logic has to decide which, because the recovery differs: resume for a duplicate email, reject for a
+  duplicate phone.
+- **`pnpm test` never exercises the live adapter.** Vitest does not copy `.env` into `process.env`, so
+  a populated `.env` does not enable the Appwrite pass — only `pnpm test:appwrite`
+  (`node --env-file=.env`) does. The contract suite logs a warning when it skips, so a green
+  `pnpm check` cannot be mistaken for live coverage.
