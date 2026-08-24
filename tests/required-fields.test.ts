@@ -39,14 +39,14 @@ const OPTIONAL = [
 describe("isRequiredField", () => {
   it("agrees with the pinned required list", () => {
     const actual = Object.keys(PatientFormValidation.shape)
-      .filter((name) => isRequiredField(name as never))
+      .filter((name) => isRequiredField(PatientFormValidation, name))
       .toSorted();
     expect(actual).toEqual(REQUIRED);
   });
 
   it("agrees with the pinned optional list", () => {
     const actual = Object.keys(PatientFormValidation.shape)
-      .filter((name) => !isRequiredField(name as never))
+      .filter((name) => !isRequiredField(PatientFormValidation, name))
       .toSorted();
     expect(actual).toEqual(OPTIONAL);
   });
@@ -65,6 +65,13 @@ describe("isRequiredField", () => {
     // consentSchema is z.boolean().refine(v => v === true) with no default, so
     // undefined must not parse. This is the case a naive `.isOptional()` check
     // is most likely to get wrong.
-    expect(isRequiredField("treatmentConsent")).toBe(true);
+    expect(isRequiredField(PatientFormValidation, "treatmentConsent")).toBe(true);
+  });
+
+  it("returns false for a name that is not a key of the given schema", () => {
+    // The mechanism that keeps one form's schema from answering for another
+    // form's field of the same name: an unknown key is just absent, not an
+    // error, and absent reads as optional.
+    expect(isRequiredField(PatientFormValidation, "notARealField")).toBe(false);
   });
 });

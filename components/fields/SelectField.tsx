@@ -15,6 +15,7 @@ interface SelectFieldProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  required?: boolean;
   children: ReactNode;
 }
 
@@ -23,6 +24,7 @@ export function SelectField({
   onChange,
   placeholder,
   disabled,
+  required,
   children,
 }: SelectFieldProps) {
   return (
@@ -34,7 +36,10 @@ export function SelectField({
       disabled={disabled}
     >
       <FormControl>
-        <SelectTrigger className="shad-select-trigger">
+        <SelectTrigger
+          className="shad-select-trigger"
+          aria-required={required || undefined}
+        >
           <SelectValue placeholder={placeholder ?? "Select an option"} />
         </SelectTrigger>
       </FormControl>

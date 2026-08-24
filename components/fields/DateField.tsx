@@ -20,6 +20,7 @@ interface DateFieldProps {
   onChange: (value: Date | undefined) => void;
   placeholder?: string;
   disabled?: boolean;
+  required?: boolean;
   /** Adds the time-slot grid below the calendar. */
   showTimeSelect?: boolean;
   /** Whose diary to check for taken slots. */
@@ -41,6 +42,7 @@ export function DateField({
   onChange,
   placeholder,
   disabled,
+  required,
   showTimeSelect,
   physician,
   fromDate,
@@ -109,6 +111,7 @@ export function DateField({
             type="button"
             variant="outline"
             disabled={disabled}
+            aria-required={required || undefined}
             className={cn(
               "shad-input h-11 w-full justify-start gap-2 border border-border bg-surface font-normal",
               !selected && "text-muted-foreground",

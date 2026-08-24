@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import CustomFormField, { FormFieldType } from "@/components/CustomFormField";
 import { FileUploader } from "@/components/FileUploader";
 import SubmitButton from "@/components/SubmitButton";
+import { FieldRequirements } from "@/components/forms/FieldRequirements";
 import { FormDraftNotice, useFormDraft } from "@/components/forms/useFormDraft";
 import { Form, FormControl } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -78,11 +79,20 @@ export default function RegisterForm({ user }: { user: User }) {
 
   return (
     <Form {...form}>
+      {/* One wrapper for all 22 fields rather than a `required` prop repeated
+          at every call site. Scoped to this form's own schema so a field name
+          this form shares with another form (there are none today, but the
+          derivation is schema-based precisely so that could change safely) is
+          judged by *this* validation, not a name collision. */}
+      <FieldRequirements schema={PatientFormValidation}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-12">
         <section className="space-y-4">
           <h1 className="header">Welcome 👋</h1>
           <p className="text-foreground/80">
             Let us know more about yourself so we can prepare for your visit.
+          </p>
+          <p className="text-12-regular text-muted-foreground">
+            <span aria-hidden="true">*</span> indicates a required field.
           </p>
           <FormDraftNotice draft={draft} />
         </section>
@@ -364,6 +374,7 @@ export default function RegisterForm({ user }: { user: User }) {
             : "Submit and continue"}
         </SubmitButton>
       </form>
+      </FieldRequirements>
     </Form>
   );
 }

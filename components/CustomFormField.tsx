@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/fields/DateField";
 import { SelectField } from "@/components/fields/SelectField";
 import { FormFieldType } from "@/components/forms/field-types";
+import { useFieldRequired } from "@/components/forms/FieldRequirements";
 
 /**
  * The form field renderer.
@@ -53,6 +54,13 @@ interface BaseProps<T extends FieldValues> {
   description?: string;
   disabled?: boolean;
   className?: string;
+  /**
+   * Override the schema-derived requirement. Only needed for forms whose
+   * fields are not covered by a `<FieldRequirements>` provider; the register
+   * form should never pass this, because a hand-set value can disagree with
+   * the validation it wraps itself in.
+   */
+  required?: boolean;
 }
 
 type FieldProps<T extends FieldValues> =
@@ -103,9 +111,11 @@ type FieldProps<T extends FieldValues> =
 function RenderField<T extends FieldValues>({
   field,
   props,
+  required,
 }: {
   field: ControllerRenderProps<T, FieldPath<T>>;
   props: FieldProps<T>;
+  required: boolean;
 }) {
   switch (props.fieldType) {
     case FormFieldType.INPUT:
@@ -132,6 +142,7 @@ function RenderField<T extends FieldValues>({
               className="shad-input border-0"
               {...field}
               value={field.value ?? ""}
+              aria-required={required || undefined}
             />
           </FormControl>
         </div>
@@ -147,6 +158,7 @@ function RenderField<T extends FieldValues>({
             className="shad-textArea"
             {...field}
             value={field.value ?? ""}
+            aria-required={required || undefined}
           />
         </FormControl>
       );
@@ -163,6 +175,7 @@ function RenderField<T extends FieldValues>({
             value={field.value as PhoneValue | undefined}
             onChange={field.onChange}
             className="input-phone"
+            aria-required={required || undefined}
           />
         </FormControl>
       );
@@ -177,6 +190,7 @@ function RenderField<T extends FieldValues>({
               onCheckedChange={field.onChange}
               disabled={props.disabled}
               className="mt-0.5"
+              aria-required={required || undefined}
             />
             <label htmlFor={props.name} className="checkbox-label">
               {props.checkboxLabel}
@@ -196,6 +210,7 @@ function RenderField<T extends FieldValues>({
           physician={props.physician}
           fromDate={props.fromDate}
           toDate={props.toDate}
+          required={required}
         />
       );
 
@@ -206,6 +221,7 @@ function RenderField<T extends FieldValues>({
           onChange={field.onChange}
           placeholder={props.placeholder}
           disabled={props.disabled}
+          required={required}
         >
           {props.children}
         </SelectField>
@@ -234,6 +250,14 @@ export default function CustomFormField<T extends FieldValues>(
 ) {
   const { control, name, label, description, fieldType, className } = props;
 
+  // Derived, not passed: an explicit prop on 22 call sites is a second source
+  // of truth that can disagree with the schema actually doing the validating.
+  // The hook is called unconditionally — `??` must apply to its *result*, not
+  // gate the call itself, or this breaks the rules of hooks the moment a
+  // caller passes `required` on some renders and not others.
+  const derivedRequired = useFieldRequired(name);
+  const required = props.required ?? derivedRequired;
+
   return (
     <FormField
       control={control}
@@ -245,10 +269,22 @@ export default function CustomFormField<T extends FieldValues>(
           {/* A checkbox is labelled inline, so a heading above it would be a
               second label for the same control. */}
           {label && fieldType !== FormFieldType.CHECKBOX ? (
-            <FormLabel className="shad-input-label">{label}</FormLabel>
+            <FormLabel className="shad-input-label">
+              {label}
+              {required ? (
+                <>
+                  {/* Decorative: announced as "Address star" otherwise. The
+                      meaning rides on the sr-only span instead. */}
+                  <span aria-hidden="true" className="ml-0.5 text-destructive">
+                    *
+                  </span>
+                  <span className="sr-only"> (required)</span>
+                </>
+              ) : null}
+            </FormLabel>
           ) : null}
 
-          <RenderField field={field} props={props} />
+          <RenderField field={field} props={props} required={required} />
 
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage className="shad-error" />
