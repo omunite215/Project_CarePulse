@@ -43,7 +43,7 @@
 
 <p align="center"><img src="public/screenshots/12-admin-dashboard-dark.png" alt="CarePulse admin dashboard" width="900" /></p>
 
-CarePulse handles the two things a small clinic does constantly: getting a new patient on the books, and managing the appointments that result. A patient enters their name, email and phone, completes a four-section medical registration, and picks a slot from their doctor's real availability. Staff open a passkey-gated dashboard to see every request, then confirm or cancel it — and the patient gets a text either way.
+CarePulse handles the two things a small clinic does constantly: getting a new patient on the books, and managing the appointments that result. A patient enters their name, email and phone, works through a four-step medical registration, and picks a slot from their doctor's real availability. Staff open a passkey-gated dashboard to see every request, then confirm or cancel it — and the patient gets a text either way.
 
 It runs with no backend at all. Clone it, install, and `pnpm dev` boots against seeded in-memory fixtures, so every screen in this README is reachable in about thirty seconds. Point the Appwrite environment variables at a real project and the same code talks to Appwrite instead; the swap happens behind one repository interface, and the same test suite covers both.
 
@@ -72,7 +72,13 @@ The diagram source is committed at [`docs/architecture.drawio`](docs/architectur
 **Patient**
 
 - Three-field onboarding that resumes instead of failing when an email is already registered
-- Four-section registration — personal, medical, identification, consent — with 23 validated fields
+- Four-step registration wizard — personal, medical, identification, review and consent — covering 22 validated fields, with each step validated before it will advance
+- Step state lives in the URL, so browser back and forward, and a mid-form reload, all land where you left off
+- Required-field markers are derived from the Zod schema rather than hand-maintained, so they cannot drift from what is actually validated
+- Validation on blur, with character counters and inline help on the long free-text answers, and a step indicator over the hero image
+- A pre-submit review of every answer, each with a link back to the step that owns it
+- A failed submit raises an error summary that routes to the step holding the first error and moves focus there
+- Date-of-birth picker with month and year dropdowns — reaching 1990 previously took around 430 chevron clicks
 - Drag-and-drop upload for an identification document, with type and size checks and a live preview
 - Draft autosave to `localStorage`, deliberately excluding the ID number and the document itself
 - Appointment booking with a calendar and a time-slot grid showing the chosen doctor's real availability
@@ -84,7 +90,7 @@ The diagram source is committed at [`docs/architecture.drawio`](docs/architectur
 - Six-digit passkey gate; the passkey is compared server-side and exchanged for a signed httpOnly cookie
 - Rate limited to five attempts per ten minutes, with `timingSafeEqual` comparison
 - Dashboard with scheduled / pending / cancelled counts across every appointment
-- Sortable, paginated table on TanStack Table v9, hydrated from the server so first paint makes zero API calls
+- Paginated table on TanStack Table v9, hydrated from the server so first paint makes zero API calls
 - Search, status filter and date-range filter held in the URL, so a filtered view is shareable and survives a refresh
 - Per-row confirm and cancel dialogs; the patient is texted on both, and a failed SMS is reported rather than hidden
 - CSV export of the current page, with formula-injection escaping
@@ -96,7 +102,7 @@ The diagram source is committed at [`docs/architecture.drawio`](docs/architectur
 - Loading, error, empty and offline states on every route — skeletons match the real layout, so nothing shifts
 - Server-validated forms; field-level errors map back onto the offending input and move focus there
 - WCAG AA contrast, visible focus rings, a skip link, and `prefers-reduced-motion` respected throughout
-- 50 unit tests and 18 end-to-end browser tests, plus a reproducible 20-shot screenshot suite
+- 125 unit tests and 36 end-to-end browser tests, plus a reproducible 20-shot screenshot suite
 
 <details>
 <summary>More screenshots</summary>
@@ -159,7 +165,7 @@ Set the Appwrite variables all together or not at all — a partial configuratio
 
 ## Usage
 
-**As a patient** — from `/`, enter a name, email and phone. You land on registration; fill in the four sections and submit. Pick a doctor and the calendar will show that doctor's free slots, with taken ones struck through. Book, and you get a confirmation page. `/patients/<id>/appointments` lists everything you have booked and lets you reschedule or cancel.
+**As a patient** — from `/`, enter a name, email and phone. You land on registration; work through the four steps, check the review summary and submit. Pick a doctor and the calendar will show that doctor's free slots, with taken ones struck through. Book, and you get a confirmation page. `/patients/<id>/appointments` lists everything you have booked and lets you reschedule or cancel.
 
 **As staff** — click **Admin** in the footer, or go to `/?admin=true`. The demo passkey is `123456`. The dashboard shows counts and the full appointment table; filter it, export the page as CSV, and use **Schedule** or **Cancel** on any row. Both text the patient, and the toast tells you whether the message actually sent.
 
@@ -196,6 +202,8 @@ pnpm diagram           # exports docs/architecture.drawio to PNG (needs draw.io 
 - [x] Patient self-serve reschedule and cancel
 - [x] URL-driven admin filters and CSV export
 - [x] Working light/dark themes and a WCAG AA pass
+- [x] Four-step registration wizard with per-step validation, URL step state and a pre-submit review
+- [ ] Sortable admin table columns, exposing the sort the read API already supports
 - [ ] Doctor availability managed in the admin UI rather than fixed clinic hours
 - [ ] Appointment volume chart on the dashboard
 - [ ] Email notifications alongside SMS

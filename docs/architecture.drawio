@@ -21,7 +21,7 @@
         <mxCell id="c-patientform" value="PatientForm&#xa;name · email · phone" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
           <mxGeometry x="60" y="24" width="150" height="52" as="geometry" />
         </mxCell>
-        <mxCell id="c-registerform" value="RegisterForm&#xa;4 sections · 23 fields" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
+        <mxCell id="c-registerform" value="RegisterForm&#xa;4-step wizard · 22 fields" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
           <mxGeometry x="230" y="24" width="150" height="52" as="geometry" />
         </mxCell>
         <mxCell id="c-apptform" value="AppointmentForm&#xa;create · schedule · cancel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E4F5EE;strokeColor=#24AE7C;fontSize=11;" vertex="1" parent="lane1">
