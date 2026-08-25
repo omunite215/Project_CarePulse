@@ -203,8 +203,9 @@ export default function RegisterForm() {
         <section className="space-y-4">
           <h1 className="header">A few details before your visit</h1>
           <p className="text-foreground/80">
-            Four short steps. Your answers save as you go, so you can stop and
-            come back.
+            Four short steps. Your answers save in this browser as you go, so
+            you can stop and come back — apart from your ID details, which
+            are never stored.
           </p>
           <p className="text-12-regular text-muted-foreground">
             <span aria-hidden="true">*</span> indicates a required field.
