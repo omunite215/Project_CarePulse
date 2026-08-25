@@ -45,13 +45,14 @@ describe("AuthShell overlay slot", () => {
     // The test content from children should be present
     expect(screen.getByText("Test content")).toBeInTheDocument();
 
-    // Content-based, not structural: a child count would break when an unrelated
-    // element is added to the aside, and could stay green if one addition
-    // masked one removal.
-    expect(screen.queryByText("Overlay test content")).not.toBeInTheDocument();
     const heroImage = screen.getByRole("img", { name: /Test hero/i });
     const aside = heroImage.closest("aside");
-    expect(aside?.textContent).toBe("");
+
+    // Scoped to the overlay, not to the whole <aside>. A text- or child-count
+    // assertion cannot see the regression this guards: with the guard removed
+    // and no overlay passed, the wrapper renders EMPTY — no text, no queryable
+    // content — so only its own identity gives it away.
+    expect(aside?.querySelector('[data-slot="aside-overlay"]')).toBeNull();
   });
 
   it("renders the overlay container with content when asideOverlay is provided", () => {
@@ -74,6 +75,7 @@ describe("AuthShell overlay slot", () => {
     const aside = heroImage.closest("aside");
     const overlayContent = screen.getByText("Overlay test content");
     expect(aside).toContainElement(overlayContent);
+    expect(aside?.querySelector('[data-slot="aside-overlay"]')).not.toBeNull();
   });
 
 });

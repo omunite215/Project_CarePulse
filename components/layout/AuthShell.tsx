@@ -86,7 +86,10 @@ export function AuthShell({ children, image, footerSlot, asideOverlay }: AuthShe
           priority
         />
         {asideOverlay ? (
-          <div className="absolute inset-0 flex items-center p-6">
+          <div
+            data-slot="aside-overlay"
+            className="absolute inset-0 flex items-center p-6"
+          >
             {asideOverlay}
           </div>
         ) : null}
