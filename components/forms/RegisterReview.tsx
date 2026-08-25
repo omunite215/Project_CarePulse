@@ -10,7 +10,7 @@ import { formatDateTime } from "@/lib/utils";
 /** Labels for the summary. Deliberately the field's full wording, not an
  *  abbreviation — in a consent summary the exact phrasing is the thing being
  *  agreed to. */
-const LABELS: Partial<Record<keyof PatientFormValues, string>> = {
+export const LABELS: Partial<Record<keyof PatientFormValues, string>> = {
   name: "Full name",
   email: "Email",
   phone: "Phone number",
@@ -62,9 +62,15 @@ export function RegisterReview() {
   return (
     <div className="space-y-4">
       {summarised.map((step) => {
-        const rows = step.fields
-          .map((name) => ({ name, text: display(name, values[name]) }))
-          .filter((row) => row.text !== null || !step.optional);
+        // Every field is listed, blank or not: a summary that quietly omits
+        // an unanswered optional field lets someone consent without ever
+        // seeing it was blank. Replacing the rows wholesale is reserved for
+        // the case below, where the entire step was skipped and a sentence
+        // says so plainly.
+        const rows = step.fields.map((name) => ({
+          name,
+          text: display(name, values[name]),
+        }));
 
         const allEmpty = rows.every((row) => row.text === null);
 
@@ -74,7 +80,7 @@ export function RegisterReview() {
             className="rounded-xl border border-border bg-surface p-4"
           >
             <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
-              <h3 className="text-14-medium text-foreground">{step.title}</h3>
+              <h2 className="text-14-medium text-foreground">{step.title}</h2>
               <Button
                 type="button"
                 variant="link"
@@ -98,9 +104,9 @@ export function RegisterReview() {
                     <dt className="text-12-regular font-bold uppercase text-muted-foreground">
                       {LABELS[row.name]}
                     </dt>
-                    {/* wrap-anywhere, not truncate: four of these fields accept
-                        500 characters, and a summary that hides what you are
-                        consenting to is not a summary. */}
+                    {/* wrap-break-word, not truncate: four of these fields
+                        accept 500 characters, and a summary that hides what
+                        you are consenting to is not a summary. */}
                     <dd className="text-14-regular wrap-break-word text-foreground">
                       {row.text ?? (
                         <span className="italic text-muted-foreground">
