@@ -83,6 +83,25 @@ async function reachRegistrationForm(page: Page, width: number) {
   await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
 }
 
+const REGISTER_STEP_IDS = ["personal", "medical", "identification", "review"] as const;
+
+/**
+ * Each step's own section heading, used to confirm a capture landed on the
+ * step its filename claims.
+ *
+ * Not the compact "Step N of 4" progress bar: that widget belongs to a later
+ * task in the plan and is not in the DOM yet. Each step's heading is unique
+ * and already present, so it proves the same thing — a capture under
+ * `register-medical-*.png` that actually shows step 1 would fail here rather
+ * than shipping mislabelled.
+ */
+const REGISTER_STEP_HEADINGS: Record<(typeof REGISTER_STEP_IDS)[number], RegExp> = {
+  personal: /personal information/i,
+  medical: /medical information/i,
+  identification: /identification and verification/i,
+  review: /consent and privacy/i,
+};
+
 test.beforeEach(async ({ page, request }) => {
   const reset = await request.post("/api/test/reset");
   expect(reset.ok(), "demo store reset must succeed").toBe(true);
@@ -108,12 +127,24 @@ for (const width of WIDTHS) {
     // Registration — the real form, reached honestly via a fresh user (see
     // reachRegistrationForm). Continues from the onboarding page above
     // rather than a second goto("/"), so onboarding is only visited once.
+    //
+    // Captures all four steps rather than the landing step alone: gating now
+    // shows one section per page load, so a single full-page capture used to
+    // show the whole 22-field form and would now silently show a quarter of
+    // it under the same filename.
     await reachRegistrationForm(page, width);
-    await stabilise(page);
-    await page.screenshot({
-      path: `${OUT}/register-${width}.png`,
-      fullPage: true,
-    });
+    const base = page.url().split("?")[0];
+    for (const step of REGISTER_STEP_IDS) {
+      await page.goto(`${base}?step=${step}`);
+      await expect(
+        page.getByRole("heading", { name: REGISTER_STEP_HEADINGS[step] }),
+      ).toBeVisible();
+      await stabilise(page);
+      await page.screenshot({
+        path: `${OUT}/register-${step}-${width}.png`,
+        fullPage: true,
+      });
+    }
 
     // New appointment (booking), for the seeded demo-user.
     await page.goto("/patients/demo-user/new-appointment");

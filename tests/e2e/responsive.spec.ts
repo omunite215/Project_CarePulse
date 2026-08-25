@@ -130,6 +130,47 @@ test.beforeEach(async ({ request }) => {
   expect(reset.ok(), "demo store reset must succeed").toBe(true);
 });
 
+const REGISTER_STEP_IDS = ["personal", "medical", "identification", "review"] as const;
+
+/**
+ * Each step's own section heading, used to prove the walk below actually
+ * reached that step.
+ *
+ * Not the compact "Step N of 4" progress bar: that widget is added by a
+ * later task in the plan and does not exist in the DOM yet, so asserting on
+ * it here would fail for a reason that has nothing to do with overflow. Each
+ * step's heading is already unique and present today, and serves the same
+ * purpose — if the `?step=` param were ignored, every iteration below would
+ * keep showing "Personal information" and every heading after the first
+ * would fail to appear.
+ */
+const REGISTER_STEP_HEADINGS: Record<(typeof REGISTER_STEP_IDS)[number], RegExp> = {
+  personal: /personal information/i,
+  medical: /medical information/i,
+  identification: /identification and verification/i,
+  review: /consent and privacy/i,
+};
+
+/**
+ * Measures every step, not just the first.
+ *
+ * Before the wizard, one page load put all four sections in the DOM at once,
+ * so a single measurement covered the whole form. Measuring only step 1 now
+ * would keep passing while covering a quarter as much — which is worse than
+ * failing, because nothing would announce the loss.
+ */
+async function walkRegistrationSteps(page: Page, width: number) {
+  const base = page.url().split("?")[0];
+
+  for (const step of REGISTER_STEP_IDS) {
+    await page.goto(`${base}?step=${step}`);
+    await expect(
+      page.getByRole("heading", { name: REGISTER_STEP_HEADINGS[step] }),
+    ).toBeVisible();
+    await expectNoOverflow(page, `register step "${step}" @ ${width}`);
+  }
+}
+
 for (const width of WIDTHS) {
   test(`patient routes do not overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -144,8 +185,10 @@ for (const width of WIDTHS) {
     // Registration — the real form, reached honestly (see the comment on
     // reachRegistrationForm). Labelled distinctly from "register" so a
     // failure here is never confused with a measurement of the redirect.
+    // Walks all four steps rather than checking the landing step alone —
+    // see walkRegistrationSteps above.
     await reachRegistrationForm(page, width);
-    await expectNoOverflow(page, `register (real form) @ ${width}`);
+    await walkRegistrationSteps(page, width);
 
     // Booking.
     await page.goto("/patients/demo-user/new-appointment");

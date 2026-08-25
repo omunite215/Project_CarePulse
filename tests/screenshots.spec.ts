@@ -125,14 +125,26 @@ test.describe("patient screens", () => {
     ).toBeVisible();
     await shot(page, "03-register-personal");
 
-    await page
-      .getByRole("heading", { name: /medical information/i })
-      .scrollIntoViewIfNeeded();
+    // Gating now renders one step per page load, so the medical and consent
+    // sections are no longer mounted alongside step 1 — scrollIntoViewIfNeeded
+    // has nothing to scroll to and would hang. Navigate to each step directly
+    // instead; the `?step=` query param is the wizard's own URL state (see
+    // RegisterWizardProvider), not a scroll position.
+    const base = page.url().split("?")[0];
+
+    await page.goto(`${base}?step=medical`);
+    await expect(
+      page.getByRole("heading", { name: /medical information/i }),
+    ).toBeVisible();
     await shot(page, "04-register-medical");
 
-    await page
-      .getByRole("heading", { name: /consent and privacy/i })
-      .scrollIntoViewIfNeeded();
+    // Still titled "Consent and privacy" at this point in the plan — the
+    // "review" step id does not yet have a review summary or a renamed
+    // heading (that lands in a later task).
+    await page.goto(`${base}?step=review`);
+    await expect(
+      page.getByRole("heading", { name: /consent and privacy/i }),
+    ).toBeVisible();
     await shot(page, "05-register-consent");
   });
 
