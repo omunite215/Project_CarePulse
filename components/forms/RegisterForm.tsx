@@ -9,6 +9,7 @@ import CustomFormField, { FormFieldType } from "@/components/CustomFormField";
 import { FileUploader } from "@/components/FileUploader";
 import SubmitButton from "@/components/SubmitButton";
 import { FieldRequirements } from "@/components/forms/FieldRequirements";
+import { RegisterReview } from "@/components/forms/RegisterReview";
 import { RegisterStepProgress } from "@/components/forms/RegisterStepIndicator";
 import { useRegisterWizard } from "@/components/forms/RegisterWizardProvider";
 import { FormDraftNotice } from "@/components/forms/useFormDraft";
@@ -463,30 +464,37 @@ export default function RegisterForm() {
           </section>
         ) : null}
 
-        {/* ----------------------------- Consent ---------------------------- */}
+        {/* ------------------------- Review and consent ---------------------- */}
         {step === "review" ? (
-          <section className="space-y-6">
-            <h2 className="sub-header text-foreground">Consent and privacy</h2>
+          <>
+            <RegisterReview />
 
-            <CustomFormField
-              fieldType={FormFieldType.CHECKBOX}
-              control={form.control}
-              name="treatmentConsent"
-              checkboxLabel="I consent to receive treatment for my health condition."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.CHECKBOX}
-              control={form.control}
-              name="disclosureConsent"
-              checkboxLabel="I consent to the use and disclosure of my health information for treatment purposes."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.CHECKBOX}
-              control={form.control}
-              name="privacyConsent"
-              checkboxLabel="I acknowledge that I have reviewed and agree to the privacy policy."
-            />
-          </section>
+            {/* Distinguishing border/tint so this reads as the action — the
+                thing you actually do on this step — rather than a fourth
+                summary card sitting alongside the ones above it. */}
+            <section className="space-y-6 rounded-xl border border-green-500 bg-green-500/5 p-4">
+              <h2 className="sub-header text-foreground">Consent and privacy</h2>
+
+              <CustomFormField
+                fieldType={FormFieldType.CHECKBOX}
+                control={form.control}
+                name="treatmentConsent"
+                checkboxLabel="I consent to receive treatment for my health condition."
+              />
+              <CustomFormField
+                fieldType={FormFieldType.CHECKBOX}
+                control={form.control}
+                name="disclosureConsent"
+                checkboxLabel="I consent to the use and disclosure of my health information for treatment purposes."
+              />
+              <CustomFormField
+                fieldType={FormFieldType.CHECKBOX}
+                control={form.control}
+                name="privacyConsent"
+                checkboxLabel="I acknowledge that I have reviewed and agree to the privacy policy."
+              />
+            </section>
+          </>
         ) : null}
 
         {/* ------------------------- Navigation footer ------------------------ */}
