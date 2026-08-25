@@ -9,6 +9,7 @@ import CustomFormField, { FormFieldType } from "@/components/CustomFormField";
 import { FileUploader } from "@/components/FileUploader";
 import SubmitButton from "@/components/SubmitButton";
 import { FieldRequirements } from "@/components/forms/FieldRequirements";
+import { RegisterStepProgress } from "@/components/forms/RegisterStepIndicator";
 import { useRegisterWizard } from "@/components/forms/RegisterWizardProvider";
 import { FormDraftNotice } from "@/components/forms/useFormDraft";
 import { Button } from "@/components/ui/button";
@@ -190,6 +191,7 @@ export default function RegisterForm() {
             <span aria-hidden="true">*</span> indicates a required field.
           </p>
           <FormDraftNotice draft={draft} />
+          <RegisterStepProgress />
         </section>
 
         {/* ---------------------------- Personal ---------------------------- */}

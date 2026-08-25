@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import RegisterForm from "@/components/forms/RegisterForm";
+import { RegisterStepIndicator } from "@/components/forms/RegisterStepIndicator";
 import { RegisterWizardProvider } from "@/components/forms/RegisterWizardProvider";
 import { AuthShell } from "@/components/layout/AuthShell";
 import { getPatient, getUser } from "@/lib/actions/patient.actions";
@@ -41,7 +42,10 @@ export default async function RegisterPage({
 
   return (
     <RegisterWizardProvider user={userResult.data}>
-      <AuthShell image={{ src: "/assets/images/register-img.png", alt: "" }}>
+      <AuthShell
+        image={{ src: "/assets/images/register-img.png", alt: "" }}
+        asideOverlay={<RegisterStepIndicator />}
+      >
         <main id="main">
           <RegisterForm />
         </main>
