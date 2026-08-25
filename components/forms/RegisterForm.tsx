@@ -87,12 +87,21 @@ export default function RegisterForm() {
   // non-interactive-element-interaction lint error, even though listening
   // for Enter is exactly the browser's own submission model for this
   // element.
+  //
+  // Deliberately no dependency array: `goNext` and `isLast` are rebuilt every
+  // render, so `[]` would pin them to the first step's values — Enter on step 2
+  // would validate step 1's fields and navigate to itself. Re-attaching one
+  // listener on one node is cheaper than that class of bug.
   useEffect(() => {
     const formElement = formRef.current;
     if (!formElement) return;
 
     function handleEnterKey(event: KeyboardEvent) {
       if (event.key !== "Enter") return;
+      // Committing a CJK input-method candidate fires Enter with
+      // isComposing set. Advancing here would unmount the field mid-composition
+      // and throw away what the user was still typing.
+      if (event.isComposing) return;
       // The last step already has a SubmitButton; let the browser's native
       // implicit submission behaviour handle Enter there.
       if (isLast) return;
@@ -115,9 +124,14 @@ export default function RegisterForm() {
   // navigation, no visible error, nothing.
   function onInvalid(errors: FieldErrors<PatientFormValues>) {
     const erroredSteps = new Set(
-      (Object.keys(errors) as (keyof PatientFormValues)[]).map(
-        stepOwningField,
-      ),
+      (Object.keys(errors) as (keyof PatientFormValues)[])
+        // A cross-field `.refine` on the schema emits an issue with an empty
+        // path, which zodResolver keys as "" — and `stepOwningField` throws on
+        // a key no step owns. Filtering to real schema fields keeps a future
+        // schema change from re-arming the inert-submit dead end this function
+        // exists to remove.
+        .filter((key) => key in PatientFormValidation.shape)
+        .map(stepOwningField),
     );
 
     // Walk in wizard order, not Object.keys(errors) order (which is not
