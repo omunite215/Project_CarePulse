@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 import { FormControl } from "@/components/ui/form";
 import {
@@ -17,6 +17,13 @@ interface SelectFieldProps {
   disabled?: boolean;
   required?: boolean;
   children: ReactNode;
+  /**
+   * Forwarded from react-hook-form's field so `form.setFocus(name)` has
+   * something to call `.focus()` on. The trigger is the only element a
+   * select field ever holds keyboard focus on — the listbox is portalled
+   * and only exists while open — so that is what the ref has to land on.
+   */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function SelectField({
@@ -26,6 +33,7 @@ export function SelectField({
   disabled,
   required,
   children,
+  ref,
 }: SelectFieldProps) {
   return (
     // Radix Select treats "" as "no value", so an empty default renders the
@@ -37,6 +45,7 @@ export function SelectField({
     >
       <FormControl>
         <SelectTrigger
+          ref={ref}
           className="shad-select-trigger"
           aria-required={required || undefined}
         >

@@ -13,15 +13,18 @@ import type { PatientFormValues } from "@/lib/validation/patient";
  * DOM, so a fragment link has nothing to target — it has to switch step first
  * and focus afterwards.
  *
- * No `role="alert"` here, unlike the per-field messages in `ui/form.tsx`.
- * Those are pure live regions: they announce in place and never move focus.
- * This container also moves focus into itself on every failed submit, and
- * pairing a live region with a focus change risks a double announcement —
- * the live region fires, then the focus change announces the same content
- * again. Moving focus is the part the browser check actually requires (a
- * sighted or keyboard user has to land somewhere), so that is what stays;
- * `aria-labelledby` gives the container an accessible name from its own
- * heading, which is what a screen reader reports when focus lands on it.
+ * `role="alert"` lives on an inner wrapper around the heading and list, not
+ * on the outer container that receives focus. GOV.UK's error summary is the
+ * source of this pattern, and it keeps `role="alert"` — it moved the role off
+ * the focused container onto a nested child specifically to fix a JAWS race
+ * condition where the live-region announcement and the focus-move
+ * announcement, firing at the same moment, caused one of the two to be
+ * dropped (alphagov/govuk-frontend#2677). It did not remove the live region.
+ * Splitting the two here the same way keeps both announcements: focus lands
+ * on the outer `<div>`, named by `aria-labelledby` from its own heading, and
+ * the nested `role="alert"` separately announces the itemised list of what
+ * is wrong — content a focus move alone would never read out. For a
+ * patient-facing medical form, that redundancy is the right trade.
  */
 export function FormErrorSummary() {
   const { form, setStep, step } = useRegisterWizard();
@@ -91,24 +94,28 @@ export function FormErrorSummary() {
       aria-labelledby={headingId}
       className="rounded-md border border-destructive bg-destructive/10 p-4"
     >
-      <h2 id={headingId} className="text-14-medium mb-2 text-destructive">
-        {names.length === 1
-          ? "One answer needs your attention"
-          : `${names.length} answers need your attention`}
-      </h2>
-      <ul className="space-y-1">
-        {names.map((name) => (
-          <li key={name}>
-            <button
-              type="button"
-              onClick={() => goToField(name)}
-              className="text-14-regular text-destructive underline hover:no-underline"
-            >
-              {String(errors[name]?.message ?? "This answer is not valid")}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {/* The live region: nested rather than on the parent `<div>` above, per
+          the comment on this component. */}
+      <div role="alert">
+        <h2 id={headingId} className="text-14-medium mb-2 text-destructive">
+          {names.length === 1
+            ? "One answer needs your attention"
+            : `${names.length} answers need your attention`}
+        </h2>
+        <ul className="space-y-1">
+          {names.map((name) => (
+            <li key={name}>
+              <button
+                type="button"
+                onClick={() => goToField(name)}
+                className="text-14-regular text-destructive underline hover:no-underline"
+              >
+                {String(errors[name]?.message ?? "This answer is not valid")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

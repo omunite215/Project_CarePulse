@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type Ref } from "react";
 import { CalendarIcon, Loader2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,14 @@ interface DateFieldProps {
    * window of a few weeks would be absurd.
    */
   variant?: "default" | "birthdate";
+  /**
+   * Forwarded from react-hook-form's field so `form.setFocus(name)` has
+   * something to call `.focus()` on. The popover's trigger button is the
+   * only element a date field ever holds keyboard focus on — the calendar
+   * itself only exists once the popover is open — so that is what the ref
+   * has to land on.
+   */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 /**
@@ -54,6 +62,7 @@ export function DateField({
   fromDate,
   toDate,
   variant,
+  ref,
 }: DateFieldProps) {
   const selected = parseDate(value);
   const [open, setOpen] = useState(false);
@@ -115,6 +124,7 @@ export function DateField({
       <FormControl>
         <PopoverTrigger asChild>
           <Button
+            ref={ref}
             type="button"
             variant="outline"
             disabled={disabled}

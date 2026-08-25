@@ -120,6 +120,16 @@ function RenderField<T extends FieldValues>({
   props: FieldProps<T>;
   required: boolean;
 }) {
+  // Read once, as a plain local, rather than writing `ref={field.ref}` at
+  // each call site below: oxlint's ref-safety check flags any object that
+  // has ever had a property literally named `ref` read off it as "a ref"
+  // for the rest of the function, once that expression lands in a `ref=`
+  // JSX attribute — a false positive here, since `field` is a fresh object
+  // handed in by react-hook-form's `Controller` on every render, not a
+  // `useRef()` value, so reading its `.ref`/`.value`/`.onChange` during
+  // render is exactly what this render prop is for.
+  const { ref } = field;
+
   switch (props.fieldType) {
     case FormFieldType.INPUT:
       return (
@@ -192,6 +202,7 @@ function RenderField<T extends FieldValues>({
       return (
         <FormControl>
           <PhoneInput
+            ref={ref}
             defaultCountry="US"
             international
             withCountryCallingCode
@@ -210,6 +221,7 @@ function RenderField<T extends FieldValues>({
         <FormControl>
           <div className="flex items-start gap-3">
             <Checkbox
+              ref={ref}
               id={props.name}
               checked={Boolean(field.value)}
               onCheckedChange={field.onChange}
@@ -227,6 +239,7 @@ function RenderField<T extends FieldValues>({
     case FormFieldType.DATE_PICKER:
       return (
         <DateField
+          ref={ref}
           value={field.value as Date | string | undefined}
           onChange={field.onChange}
           placeholder={props.placeholder}
@@ -243,6 +256,7 @@ function RenderField<T extends FieldValues>({
     case FormFieldType.SELECT:
       return (
         <SelectField
+          ref={ref}
           value={field.value as string | undefined}
           onChange={field.onChange}
           placeholder={props.placeholder}
@@ -254,6 +268,17 @@ function RenderField<T extends FieldValues>({
       );
 
     case FormFieldType.SKELETON:
+      // No ref forwarded, unlike every other branch: the markup here is
+      // supplied by the caller's `renderSkeleton`, which can hand back
+      // anything (a <RadioGroup>, a <FileUploader>, a future custom widget)
+      // with no single focusable element this component could generically
+      // attach a ref to. Consequence: `form.setFocus(name)` — and therefore
+      // the error summary's jump-to-field button and `applyServerErrors`'
+      // `shouldFocus` — silently does nothing for a SKELETON field. The
+      // summary still switches to the right step; it just cannot land focus
+      // on the control itself. Fixing that would require `renderSkeleton` to
+      // accept and place a ref, which is a bigger contract change than this
+      // fix's scope.
       return props.renderSkeleton(field);
 
     default: {
