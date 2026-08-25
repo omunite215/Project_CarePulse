@@ -17,11 +17,11 @@ import type { Page } from "@playwright/test";
  *     animation, including the StatCard count-up, which would otherwise be
  *     caught mid-tick.
  *  4. Fonts are awaited and the pointer is parked away from any element so no
- *     stray hover or focus ring sneaks in. Scroll position is left alone —
- *     `04-register-medical` and `05-register-consent` rely on the test having
- *     scrolled there first, and resetting it here silently overwrote both
- *     with a copy of `03-register-personal` (each `page.goto`/`page.reload`
- *     already lands at the top, so nothing needed a reset here anyway).
+ *     stray hover or focus ring sneaks in. Scroll position is left alone
+ *     because there is nothing to reset it from: every capture below reaches
+ *     its state through a fresh `page.goto`/`page.reload` — including the
+ *     register steps, which navigate via the `?step=` query param rather than
+ *     scrolling to a section — and navigation already lands at the top.
  */
 
 const OUT = "public/screenshots";

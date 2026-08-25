@@ -182,7 +182,7 @@ pnpm check       # lint + typecheck + test
 
 ```bash
 pnpm shots             # rewrites public/screenshots/ from a live build
-pnpm shots:responsive  # 42-capture breakpoint audit, tests/responsive-shots.spec.ts
+pnpm shots:responsive  # 63-capture breakpoint audit, tests/responsive-shots.spec.ts
 pnpm diagram           # exports docs/architecture.drawio to PNG (needs draw.io desktop)
 ```
 

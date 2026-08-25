@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import type { FieldErrors } from "react-hook-form";
 
 import CustomFormField, { FormFieldType } from "@/components/CustomFormField";
 import { FileUploader } from "@/components/FileUploader";
@@ -21,7 +23,7 @@ import {
 } from "@/constants";
 import { registerPatient } from "@/lib/actions/patient.actions";
 import { applyServerErrors, toastSuccess } from "@/lib/forms/apply-server-errors";
-import { REGISTER_STEPS } from "@/lib/forms/register-steps";
+import { REGISTER_STEPS, stepOwningField } from "@/lib/forms/register-steps";
 import {
   PatientFormValidation,
   type PatientFormValues,
@@ -71,6 +73,67 @@ export default function RegisterForm() {
     setStep(next.id);
   }
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Steps 1-3 have no submit button, so a form with more than one text field
+  // and no submit button falls under the HTML implicit-submission rule: Enter
+  // is simply ignored there. Route it to the same action as "Continue" —
+  // but only for the plain text-style inputs the rule is actually about, so a
+  // <textarea>'s newline and a button's (select trigger, date picker, radio
+  // item) own Enter handling are left alone.
+  //
+  // Wired via a native listener rather than a JSX `onKeyDown`: a <form> has
+  // no interactive ARIA role, so an `onKeyDown` prop there is a
+  // non-interactive-element-interaction lint error, even though listening
+  // for Enter is exactly the browser's own submission model for this
+  // element.
+  useEffect(() => {
+    const formElement = formRef.current;
+    if (!formElement) return;
+
+    function handleEnterKey(event: KeyboardEvent) {
+      if (event.key !== "Enter") return;
+      // The last step already has a SubmitButton; let the browser's native
+      // implicit submission behaviour handle Enter there.
+      if (isLast) return;
+      if (!(event.target instanceof HTMLInputElement)) return;
+      if (event.target.type === "file") return;
+
+      event.preventDefault();
+      void goNext();
+    }
+
+    formElement.addEventListener("keydown", handleEnterKey);
+    return () => formElement.removeEventListener("keydown", handleEnterKey);
+  });
+
+  // Only the current step's <section> is mounted (see the note on the
+  // component doc comment above), so an error on a field outside it has no
+  // <FormMessage> to render and no input ref for react-hook-form's
+  // shouldFocusError to land on. Without this, a stray invalid field left
+  // behind on an earlier step made "Complete registration" look inert: no
+  // navigation, no visible error, nothing.
+  function onInvalid(errors: FieldErrors<PatientFormValues>) {
+    const erroredSteps = new Set(
+      (Object.keys(errors) as (keyof PatientFormValues)[]).map(
+        stepOwningField,
+      ),
+    );
+
+    // Walk in wizard order, not Object.keys(errors) order (which is not
+    // guaranteed to match it), so a step-1 problem always wins over a later
+    // one instead of bouncing the user to whichever error happened to sort
+    // first.
+    const target = REGISTER_STEPS.find((candidate) =>
+      erroredSteps.has(candidate),
+    );
+
+    // The error is already on screen if it belongs to the current step —
+    // navigating (and the scroll-to-top that comes with it) would just be
+    // noise.
+    if (target && target.id !== current?.id) setStep(target.id);
+  }
+
   async function onSubmit(values: PatientFormValues) {
     // The Date and the File both survive Next's Server Action serialiser, so no
     // manual FormData packing or JSON round-trip is needed.
@@ -99,7 +162,11 @@ export default function RegisterForm() {
           this form shares with another form (there are none today, but the
           derivation is schema-based precisely so that could change safely) is
           judged by *this* validation, not a name collision. */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-12">
+      <form
+        ref={formRef}
+        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+        className="flex-1 space-y-12"
+      >
         <section className="space-y-4">
           <h1 className="header">Welcome 👋</h1>
           <p className="text-foreground/80">
