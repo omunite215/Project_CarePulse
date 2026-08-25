@@ -152,6 +152,130 @@ test.describe("patient flow", () => {
     ).toBeVisible();
     await expect(page.getByText(/^Upcoming \(\d+\)$/)).toBeVisible();
   });
+
+  test("a new patient completes all four registration steps", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByLabel("Full name").fill("Ada Lovelace");
+    await page.getByLabel("Email").fill(`ada-${Date.now()}@example.com`);
+    await phoneInput(page).fill("+12025551234");
+    await page.getByRole("button", { name: /get started/i }).click();
+    await expect(page).toHaveURL(/\/register$/);
+
+    // ---- Step 1: personal ----
+    await page.getByLabel(/date of birth/i).click();
+    // Dropdowns, not 430 chevron clicks. This assertion is the regression
+    // guard for the picker fix.
+    //
+    // VERIFY THESE TWO ACCESSIBLE NAMES AGAINST THE REAL DOM before trusting
+    // them — they come from DayPicker, not from our code, and the selects are
+    // `opacity-0` overlays. `selectOption` operates on the underlying <select>,
+    // so invisibility is not the problem; the accessible name might be.
+    await page.getByRole("combobox", { name: /year/i }).selectOption("1991");
+    await page.getByRole("combobox", { name: /month/i }).selectOption("3");
+    // Not a bare "18": DayPicker gives every day button a full accessible
+    // name ("Thursday, April 18th, 1991"), the same property the booking
+    // test above already works around. "18" then matches zero buttons and
+    // hangs instead of failing fast, so the ordinal form is what actually
+    // finds the day.
+    await page
+      .getByRole("grid")
+      .getByRole("button", { name: /\b18th\b/ })
+      .click();
+
+    await page.getByRole("radio", { name: "Female" }).click();
+    await page.getByLabel("Address").fill("418 Maple Street, Springfield, IL");
+    await page.getByLabel(/occupation/i).fill("Mathematician");
+    await page.getByLabel("Emergency contact name").fill("Charles Babbage");
+    await page
+      .getByRole("textbox", { name: "Emergency contact number" })
+      .fill("+12025559876");
+    await page.getByRole("button", { name: /continue/i }).click();
+
+    // ---- Step 2: medical ----
+    await expect(
+      page.getByRole("heading", { name: /medical information/i }),
+    ).toBeVisible();
+    await page.getByLabel(/primary care physician/i).click();
+    await page.getByRole("option", { name: /john green/i }).click();
+    await page.getByLabel("Insurance provider").fill("Blue Shield");
+    await page.getByLabel("Insurance policy number").fill("POL-123456");
+    await page.getByLabel(/allergies/i).fill("Penicillin");
+    await page.getByRole("button", { name: /continue/i }).click();
+
+    // ---- Step 3: identification — entirely optional ----
+    await expect(
+      page.getByRole("heading", { name: /identification/i }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /skip this step/i }).click();
+
+    // ---- Step 4: review and consent ----
+    // The heading is "Consent and privacy", NOT "Review and consent".
+    // "Review and consent" is only the step's internal `title`, and the review
+    // step is excluded from the summary that renders titles — so no element
+    // carries that text. Three other spec files key off this same heading.
+    await expect(
+      page.getByRole("heading", { name: /consent and privacy/i }),
+    ).toBeVisible();
+    // The summary is load-bearing: prove it shows what was entered.
+    await expect(page.getByText("Ada Lovelace")).toBeVisible();
+    await expect(page.getByText("Penicillin")).toBeVisible();
+    await expect(page.getByText(/didn't add an ID document/i)).toBeVisible();
+
+    await page.getByLabel(/consent to receive treatment/i).check();
+    await page.getByLabel(/use and disclosure/i).check();
+    await page.getByLabel(/privacy policy/i).check();
+    await page.getByRole("button", { name: /complete registration/i }).click();
+
+    await expect(page).toHaveURL(/\/new-appointment$/, { timeout: 15_000 });
+  });
+
+  test("a step will not advance while a required answer is missing", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByLabel("Full name").fill("Incomplete Person");
+    await page.getByLabel("Email").fill(`incomplete-${Date.now()}@example.com`);
+    await phoneInput(page).fill("+12025551299");
+    await page.getByRole("button", { name: /get started/i }).click();
+    await expect(page).toHaveURL(/\/register$/);
+
+    // Address, occupation, DOB and the rest are all still empty.
+    await page.getByRole("button", { name: /continue/i }).click();
+
+    await expect(page.getByRole("alert").first()).toBeVisible();
+    // Still on step 1: a blocked step must not advance.
+    await expect(
+      page.getByRole("heading", { name: /personal information/i }),
+    ).toBeVisible();
+  });
+
+  test("browser back returns to the previous step, not out of the form", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByLabel("Full name").fill("Back Button");
+    await page.getByLabel("Email").fill(`back-${Date.now()}@example.com`);
+    await phoneInput(page).fill("+12025551288");
+    await page.getByRole("button", { name: /get started/i }).click();
+    // Wait for the redirect before reading page.url(): onboarding's
+    // navigation is a server round trip, and reading the URL synchronously
+    // after click() can still observe "/" — every other "Get started" click
+    // in this file waits for /register the same way before touching page.url().
+    await expect(page).toHaveURL(/\/register$/);
+
+    await page.goto(`${page.url()}?step=medical`);
+    await expect(
+      page.getByRole("heading", { name: /medical information/i }),
+    ).toBeVisible();
+
+    await page.goBack();
+    await expect(
+      page.getByRole("heading", { name: /personal information/i }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/register/);
+  });
 });
 
 test.describe("admin access", () => {
