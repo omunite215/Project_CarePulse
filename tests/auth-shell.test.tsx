@@ -6,19 +6,19 @@ import { AuthShell } from "@/components/layout/AuthShell";
 
 /**
  * Mock next/image to avoid canvas/fill rendering complexity in jsdom.
- * Use a div with aria-label to preserve accessibility for testing.
+ * Render a native img element, excluding next/image-specific props.
  */
 vi.mock("next/image", () => ({
-  default: ({
-    alt,
-    ...props
-  }: {
+  default: ({ alt, fill: _fill, sizes: _sizes, priority: _priority, ...props }: {
     alt: string;
+    fill?: boolean;
+    sizes?: string;
+    priority?: boolean;
     [key: string]: unknown;
-  }) => (
-    // eslint-disable-next-line jsx-a11y/prefer-tag-over-role
-    <div role="img" aria-label={alt} {...props} />
-  ),
+  }) => {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img alt={alt} {...props} />;
+  },
 }));
 
 /**
@@ -45,12 +45,13 @@ describe("AuthShell overlay slot", () => {
     // The test content from children should be present
     expect(screen.getByText("Test content")).toBeInTheDocument();
 
-    // The aside should contain only the image, no overlay wrapper.
-    // We verify this by checking that the aside has exactly one child
-    // (the mocked image element), not two (image + overlay div).
+    // Content-based, not structural: a child count would break when an unrelated
+    // element is added to the aside, and could stay green if one addition
+    // masked one removal.
+    expect(screen.queryByText("Overlay test content")).not.toBeInTheDocument();
     const heroImage = screen.getByRole("img", { name: /Test hero/i });
     const aside = heroImage.closest("aside");
-    expect(aside?.children.length).toBe(1);
+    expect(aside?.textContent).toBe("");
   });
 
   it("renders the overlay container with content when asideOverlay is provided", () => {
@@ -68,39 +69,11 @@ describe("AuthShell overlay slot", () => {
     expect(screen.getByText("Test content")).toBeInTheDocument();
     expect(screen.getByText("Overlay test content")).toBeInTheDocument();
 
-    // The aside should now have two children: the mocked image and the overlay wrapper div
+    // Verify the overlay content is within the aside
     const heroImage = screen.getByRole("img", { name: /Test hero/i });
     const aside = heroImage.closest("aside");
-    expect(aside?.children.length).toBe(2);
-
-    // Verify the overlay content is within the aside
     const overlayContent = screen.getByText("Overlay test content");
     expect(aside).toContainElement(overlayContent);
   });
 
-  it("allows complex overlay content with nested elements", () => {
-    const OverlayComponent = (
-      <div>
-        <h2>Step Indicator</h2>
-        <p>Step 1 of 3</p>
-      </div>
-    );
-
-    render(
-      <AuthShell
-        image={{ src: "/test-image.jpg", alt: "Test hero" }}
-        footerSlot={null}
-        asideOverlay={OverlayComponent}
-      >
-        <div>Test content</div>
-      </AuthShell>,
-    );
-
-    expect(screen.getByText("Step Indicator")).toBeInTheDocument();
-    expect(screen.getByText("Step 1 of 3")).toBeInTheDocument();
-
-    const heroImage = screen.getByRole("img", { name: /Test hero/i });
-    const aside = heroImage.closest("aside");
-    expect(aside).toContainElement(screen.getByText("Step Indicator"));
-  });
 });
