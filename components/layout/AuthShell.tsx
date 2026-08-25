@@ -11,6 +11,16 @@ interface AuthShellProps {
   image: { src: string; alt: string };
   /** Rendered under the content, e.g. the admin link. */
   footerSlot?: ReactNode;
+  /**
+   * Content laid over the hero image track, e.g. the registration step
+   * indicator. Absent on every other page, which keeps their rendering
+   * byte-identical.
+   *
+   * The overlay supplies its own background. The hero is `object-cover`, so
+   * the visible crop moves with viewport height — text relying on the photo
+   * being dark in a given region is betting on a crop it does not control.
+   */
+  asideOverlay?: ReactNode;
 }
 
 /**
@@ -34,7 +44,7 @@ interface AuthShellProps {
  * scrolled an inner element with `remove-scrollbar`, which hid the only
  * scroll-position cue a 22-field form gives you.
  */
-export function AuthShell({ children, image, footerSlot }: AuthShellProps) {
+export function AuthShell({ children, image, footerSlot, asideOverlay }: AuthShellProps) {
   return (
     <div className="grid min-h-dvh grid-cols-1 md:grid-cols-shell-md lg:grid-cols-shell-lg xl:grid-cols-shell-xl 2xl:grid-cols-shell-2xl">
       <section className="page-shell flex max-w-5xl flex-col py-8 sm:py-10 lg:py-14 2xl:max-w-8xl">
@@ -75,6 +85,11 @@ export function AuthShell({ children, image, footerSlot }: AuthShellProps) {
           className="object-cover"
           priority
         />
+        {asideOverlay ? (
+          <div className="absolute inset-0 flex items-center p-6">
+            {asideOverlay}
+          </div>
+        ) : null}
       </aside>
     </div>
   );
