@@ -9,6 +9,7 @@ import CustomFormField, { FormFieldType } from "@/components/CustomFormField";
 import { FileUploader } from "@/components/FileUploader";
 import SubmitButton from "@/components/SubmitButton";
 import { FieldRequirements } from "@/components/forms/FieldRequirements";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 import { RegisterReview } from "@/components/forms/RegisterReview";
 import { RegisterStepProgress } from "@/components/forms/RegisterStepIndicator";
 import { useRegisterWizard } from "@/components/forms/RegisterWizardProvider";
@@ -163,6 +164,22 @@ export default function RegisterForm() {
 
     if (!result.ok) {
       applyServerErrors(form, result);
+
+      // A server field error can land on a step the user is no longer on —
+      // the Appwrite adapter's duplicate-phone error targets `phone`, which
+      // lives on step 1 while this submit happens on step 4. Without this the
+      // form would reject the submission with nothing visible on screen.
+      // Wizard order, and filtered to real schema fields. `applyServerErrors`
+      // casts each key with `name as Path<T>` without checking it, so a server
+      // returning an unexpected key would otherwise reach `stepOwningField`,
+      // which throws. This mirrors the guard already in `onInvalid` — the two
+      // paths are different (this one runs *after* client validation passed)
+      // but they must not disagree about where to send the user.
+      const serverFields = new Set(Object.keys(result.error.fieldErrors ?? {}));
+      const target = REGISTER_STEPS.find((candidate) =>
+        candidate.fields.some((field) => serverFields.has(field)),
+      );
+      if (target && target.id !== step) setStep(target.id);
       return;
     }
 
@@ -496,6 +513,8 @@ export default function RegisterForm() {
             </section>
           </>
         ) : null}
+
+        <FormErrorSummary />
 
         {/* ------------------------- Navigation footer ------------------------ */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
