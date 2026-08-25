@@ -168,10 +168,12 @@ test.describe("patient flow", () => {
     // Dropdowns, not 430 chevron clicks. This assertion is the regression
     // guard for the picker fix.
     //
-    // VERIFY THESE TWO ACCESSIBLE NAMES AGAINST THE REAL DOM before trusting
-    // them — they come from DayPicker, not from our code, and the selects are
-    // `opacity-0` overlays. `selectOption` operates on the underlying <select>,
-    // so invisibility is not the problem; the accessible name might be.
+    // These accessible names come from DayPicker, not our code: "Choose the
+    // Month" and "Choose the Year", straight from react-day-picker's
+    // labelMonthDropdown.js / labelYearDropdown.js — components/ui/calendar.tsx
+    // overrides neither, so /month/i and /year/i match them. The selects are
+    // `opacity-0` overlays, but `selectOption` operates on the underlying
+    // <select>, so invisibility is not the obstacle here.
     await page.getByRole("combobox", { name: /year/i }).selectOption("1991");
     await page.getByRole("combobox", { name: /month/i }).selectOption("3");
     // Not a bare "18": DayPicker gives every day button a full accessible
@@ -275,6 +277,65 @@ test.describe("patient flow", () => {
       page.getByRole("heading", { name: /personal information/i }),
     ).toBeVisible();
     await expect(page).toHaveURL(/\/register/);
+  });
+
+  test("a failed final submit routes to the step owning the first error, not a dead end", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByLabel("Full name").fill("Grace Hopper");
+    await page.getByLabel("Email").fill(`grace-${Date.now()}@example.com`);
+    await phoneInput(page).fill("+12025551277");
+    await page.getByRole("button", { name: /get started/i }).click();
+    // Same wait-before-reading-the-URL fix as the browser-back test above:
+    // onboarding's navigation is a server round trip.
+    await expect(page).toHaveURL(/\/register$/);
+
+    // Jump straight to the last step, skipping personal, medical and
+    // identification entirely — every field but the three onboarding already
+    // collected (name, email, phone) is still empty.
+    await page.goto(`${page.url()}?step=review`);
+    await expect(
+      page.getByRole("heading", { name: /consent and privacy/i }),
+    ).toBeVisible();
+
+    await page.getByLabel(/consent to receive treatment/i).check();
+    await page.getByLabel(/use and disclosure/i).check();
+    await page.getByLabel(/privacy policy/i).check();
+    await page.getByRole("button", { name: /complete registration/i }).click();
+
+    // The whole-schema submit fails on fields that live on steps that were
+    // never mounted (birthDate, gender, address, and more), and the wizard
+    // must route to the first offending step in wizard order — "personal" —
+    // not leave the user stranded on "review" where they clicked submit.
+    // This is the exact dead end an earlier review caught: a stray invalid
+    // field on an unmounted step used to make "Complete registration" look
+    // inert, with no navigation and nothing visible.
+    //
+    // The URL, not the heading, is the honest signal here: RegisterReview
+    // renders its own "Personal information" <h2> as a summary section
+    // title on every visit to the review step, so that text is on screen
+    // whether or not a redirect actually fired — asserting on it would pass
+    // even with the routing deleted. nuqs clears the `step` query param back
+    // to nothing once the wizard returns to its default ("personal") step,
+    // so a bare `/register` — not `?step=review` — is what actually proves
+    // the navigation happened.
+    await expect(page).toHaveURL(/\/register$/);
+
+    // More than one field is wrong; the summary's plural copy ("N answers
+    // need your attention") only renders above a count of one, so matching
+    // it proves there is more than a single problem without pinning the test
+    // to an exact count that would break with the schema.
+    await expect(
+      page.getByText(/\d+ answers need your attention/i),
+    ).toBeVisible();
+
+    // An entry for a field on the step already showing must move focus
+    // straight to that control, not merely acknowledge the click.
+    await page
+      .getByRole("button", { name: /address must be at least 5 characters/i })
+      .click();
+    await expect(page.getByLabel("Address")).toBeFocused();
   });
 });
 
