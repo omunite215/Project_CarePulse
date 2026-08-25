@@ -102,8 +102,8 @@ describe("FormErrorSummary", () => {
     // per REGISTER_STEPS — the reverse of the trigger order above.
     const buttons = screen.getAllByRole("button");
     expect(buttons.map((button) => button.textContent)).toEqual([
-      "Invalid email address",
-      "Select a doctor",
+      "Enter an email address, like jane@example.com",
+      "Choose the doctor you would like to see",
       "You must consent to privacy in order to proceed",
     ]);
   });
@@ -190,7 +190,11 @@ describe("clicking a summary entry", () => {
     // "primaryPhysician" belongs to the medical step; the wizard is on
     // review. Its SELECT field is not in the DOM yet — StepAwareFields only
     // mounts it once `step` actually becomes "medical".
-    fireEvent.click(screen.getByRole("button", { name: "Select a doctor" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Choose the doctor you would like to see",
+      }),
+    );
 
     const trigger = await screen.findByRole("combobox", {
       name: /primary care physician/i,

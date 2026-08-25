@@ -26,7 +26,7 @@ export const PatientFormValidation = z.object({
   // the schema's *input* type to `unknown`, which then refuses to line up with
   // react-hook-form's generics.
   birthDate: z
-    .date({ error: "Date of birth is required" })
+    .date({ error: "Select your date of birth" })
     .refine((date) => date <= new Date(), {
       error: "Date of birth cannot be in the future",
     }),
@@ -34,7 +34,7 @@ export const PatientFormValidation = z.object({
   address: z
     .string()
     .trim()
-    .min(5, { error: "Address must be at least 5 characters" })
+    .min(5, { error: "Enter your full address, including the town" })
     .max(500, { error: "Address must be at most 500 characters" }),
   occupation: z
     .string()
@@ -45,7 +45,9 @@ export const PatientFormValidation = z.object({
   emergencyContactNumber: phoneSchema,
 
   // Medical
-  primaryPhysician: z.string().min(2, { error: "Select a doctor" }),
+  primaryPhysician: z
+    .string()
+    .min(2, { error: "Choose the doctor you would like to see" }),
   insuranceProvider: z
     .string()
     .trim()

@@ -118,7 +118,9 @@ async function reachRegistrationForm(page: Page, width: number) {
   await expect(page).toHaveURL(/\/patients\/[^/]+\/register$/, {
     timeout: 15_000,
   });
-  await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /a few details before your visit/i }),
+  ).toBeVisible();
 }
 
 test.beforeEach(async ({ request }) => {

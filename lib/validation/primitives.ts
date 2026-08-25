@@ -6,16 +6,18 @@ export const PHONE_PATTERN = /^\+\d{10,15}$/;
 export const phoneSchema = z
   .string()
   .refine((value) => PHONE_PATTERN.test(value), {
-    error: "Invalid phone number",
+    error: "Enter a phone number including the country code",
   });
 
 export const personNameSchema = z
   .string()
   .trim()
-  .min(2, { error: "Name must be at least 2 characters" })
+  .min(2, { error: "Enter the full name" })
   .max(50, { error: "Name must be at most 50 characters" });
 
-export const emailSchema = z.email({ error: "Invalid email address" });
+export const emailSchema = z.email({
+  error: "Enter an email address, like jane@example.com",
+});
 
 /**
  * A consent checkbox that must be ticked.

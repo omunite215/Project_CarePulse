@@ -49,7 +49,9 @@ test.describe("patient flow", () => {
     await page.getByRole("button", { name: /get started/i }).click();
 
     await expect(page).toHaveURL(/\/patients\/[^/]+\/register$/);
-    await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /a few details before your visit/i }),
+    ).toBeVisible();
   });
 
   test("onboarding shows a field error for a bad phone number", async ({
@@ -62,7 +64,9 @@ test.describe("patient flow", () => {
     await phoneInput(page).fill("123");
     await page.getByRole("button", { name: /get started/i }).click();
 
-    await expect(page.getByText(/invalid phone number/i)).toBeVisible();
+    await expect(
+      page.getByText(/enter a phone number including the country code/i),
+    ).toBeVisible();
     // Still on the same page: a failed submit must not navigate.
     await expect(page).toHaveURL("/");
   });
@@ -333,7 +337,9 @@ test.describe("patient flow", () => {
     // An entry for a field on the step already showing must move focus
     // straight to that control, not merely acknowledge the click.
     await page
-      .getByRole("button", { name: /address must be at least 5 characters/i })
+      .getByRole("button", {
+        name: /enter your full address, including the town/i,
+      })
       .click();
     await expect(page.getByLabel("Address")).toBeFocused();
   });

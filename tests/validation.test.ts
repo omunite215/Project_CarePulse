@@ -34,7 +34,9 @@ describe("UserFormValidation", () => {
       phone: "2025550143",
     });
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toBe("Invalid phone number");
+    expect(result.error?.issues[0]?.message).toBe(
+      "Enter a phone number including the country code",
+    );
   });
 
   it("rejects a one-character name", () => {
@@ -52,7 +54,9 @@ describe("UserFormValidation", () => {
       email: "not-an-email",
       phone: "+12025550143",
     });
-    expect(result.error?.issues[0]?.message).toBe("Invalid email address");
+    expect(result.error?.issues[0]?.message).toBe(
+      "Enter an email address, like jane@example.com",
+    );
   });
 });
 
