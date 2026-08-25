@@ -90,6 +90,20 @@ export function RegisterWizardProvider({
      * blur; `onChange` scolds you halfway through typing an email address.
      */
     mode: "onTouched",
+    /*
+     * react-hook-form's own default (`true`) auto-focuses the first
+     * registered field with an error whenever `handleSubmit`'s validation
+     * fails — a third, uncoordinated actor fighting the deliberate handoff
+     * between the new step's heading and `FormErrorSummary` (see the
+     * heading-focus effect in `RegisterForm`). Left on, a failed submit that
+     * routes to another step lets this fire *after* that step's fields
+     * remount and register, silently overriding both: focus lands on
+     * whichever field happens to be first in the DOM, not on the summary.
+     * `FormErrorSummary`'s own "jump to field" buttons already call
+     * `form.setFocus` deliberately, and `applyServerErrors` passes its own
+     * `shouldFocus` per field — neither depends on this default.
+     */
+    shouldFocusError: false,
     defaultValues: {
       ...PatientFormDefaultValues,
       name: user.name,

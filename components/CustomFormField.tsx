@@ -108,6 +108,7 @@ type FieldProps<T extends FieldValues> =
       fieldType: typeof FormFieldType.SKELETON;
       renderSkeleton: (
         field: ControllerRenderProps<T, FieldPath<T>>,
+        required: boolean,
       ) => ReactNode;
     });
 
@@ -268,18 +269,28 @@ function RenderField<T extends FieldValues>({
       );
 
     case FormFieldType.SKELETON:
-      // No ref forwarded, unlike every other branch: the markup here is
-      // supplied by the caller's `renderSkeleton`, which can hand back
-      // anything (a <RadioGroup>, a <FileUploader>, a future custom widget)
-      // with no single focusable element this component could generically
-      // attach a ref to. Consequence: `form.setFocus(name)` — and therefore
-      // the error summary's jump-to-field button and `applyServerErrors`'
-      // `shouldFocus` — silently does nothing for a SKELETON field. The
-      // summary still switches to the right step; it just cannot land focus
-      // on the control itself. Fixing that would require `renderSkeleton` to
-      // accept and place a ref, which is a bigger contract change than this
-      // fix's scope.
-      return props.renderSkeleton(field);
+      // No ref attached *by this component*, unlike every other branch: the
+      // markup here is supplied by the caller's `renderSkeleton`, which can
+      // hand back anything (a <RadioGroup>, a <FileUploader>, a future custom
+      // widget) with no single focusable element this component could
+      // generically attach a ref to on the caller's behalf.
+      //
+      // That does not mean `form.setFocus(name)` is a dead end for every
+      // SKELETON field, though — `field` (and therefore `field.ref`) is
+      // passed straight through to `renderSkeleton`, unchanged, so a caller
+      // whose markup *does* have an obvious focus target can still place that
+      // ref itself. RegisterForm's `gender` field does exactly this, putting
+      // `field.ref` on the first `<RadioGroupItem>`. A caller that renders
+      // something with no such target (`identificationDocument`'s
+      // `<FileUploader>`) simply doesn't use it, and `setFocus` stays a no-op
+      // there, same as before.
+      //
+      // `required` is threaded through for the same reason this component
+      // needs it for the FormLabel asterisk above: this branch's
+      // caller-supplied markup has no `aria-required` of its own unless the
+      // caller wires it in, and only the caller knows where that attribute
+      // belongs (a `role="radiogroup"` container here, a dropzone there).
+      return props.renderSkeleton(field, required);
 
     default: {
       // Exhaustiveness check: adding a FormFieldType without handling it here

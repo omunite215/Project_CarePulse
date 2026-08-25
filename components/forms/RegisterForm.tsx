@@ -48,8 +48,16 @@ import {
  */
 export default function RegisterForm() {
   const router = useRouter();
-  const { user, form, draft, step, stepIndex, setStep, recordFailedAttempt } =
-    useRegisterWizard();
+  const {
+    user,
+    form,
+    draft,
+    step,
+    stepIndex,
+    setStep,
+    failedAttempts,
+    recordFailedAttempt,
+  } = useRegisterWizard();
 
   const selectedPhysician = form.watch("primaryPhysician");
 
@@ -85,6 +93,40 @@ export default function RegisterForm() {
   }
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  // The current step's own heading, so focus can follow the content instead
+  // of dropping to <body> — see the effect below. Only one step's <h2> (or,
+  // on the review step, the consent section's) is ever mounted at a time, so
+  // one ref shared across all of them is safe.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The `step`/`failedAttempts` pair last seen by the effect below, so it can
+  // tell an actual change apart from a re-render that left both the same
+  // (which also covers skipping the very first commit: a step change
+  // deserves a focus move, but landing the page on a heading nobody asked to
+  // jump to on first load would not — on mount these already equal `step`
+  // and `failedAttempts`, so nothing looks "changed").
+  const previousStepRef = useRef(step);
+  const previousFailedAttemptsRef = useRef(failedAttempts);
+
+  useEffect(() => {
+    const stepChanged = previousStepRef.current !== step;
+    const attemptsChanged =
+      previousFailedAttemptsRef.current !== failedAttempts;
+    previousStepRef.current = step;
+    previousFailedAttemptsRef.current = failedAttempts;
+
+    // A step change that arrives in the same commit as a new failed attempt
+    // is a failed submit routing to the step owning the first error (see
+    // `onInvalid`/`onSubmit` below) — `FormErrorSummary`'s own effect, keyed
+    // on `failedAttempts`, is about to focus the summary for that same
+    // attempt. Moving focus to the heading too would just steal it back a
+    // moment later. Inferring that from the two values changing together,
+    // rather than a flag one branch sets and this effect clears, is what
+    // keeps this safe from a future failure branch that adds a new way to
+    // route without remembering to set such a flag.
+    if (stepChanged && !attemptsChanged) headingRef.current?.focus();
+  }, [step, failedAttempts]);
 
   // Steps 1-3 have no submit button, so a form with more than one text field
   // and no submit button falls under the HTML implicit-submission rule: Enter
@@ -232,7 +274,11 @@ export default function RegisterForm() {
         {/* ---------------------------- Personal ---------------------------- */}
         {step === "personal" ? (
           <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-            <h2 className="sub-header col-span-full text-foreground">
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="sub-header col-span-full text-foreground"
+            >
               Personal information
             </h2>
 
@@ -281,7 +327,7 @@ export default function RegisterForm() {
               control={form.control}
               name="gender"
               label="Gender"
-              renderSkeleton={(field) => (
+              renderSkeleton={(field, required) => (
                 <FormControl>
                   {/* grid, not flex: equal cells hold their width instead of
                       shrinking to their label text at narrow viewports. Two
@@ -295,13 +341,39 @@ export default function RegisterForm() {
                       comfortable — and the third option wraps to a second row.
                       Three-up returns at `lg`, where there is room again. */}
                   <RadioGroup
+                    // The visible <FormLabel>'s `htmlFor` (rendered above by
+                    // CustomFormField) points at this element's `id`, but a
+                    // `<label for>` only associates with labelable elements
+                    // (input, button, select, textarea, …) — a
+                    // `role="radiogroup"` <div> is not one, so browsers and
+                    // assistive tech cannot rely on that association reaching
+                    // this control. `aria-label` gives the group a real
+                    // accessible name that does not depend on it, and
+                    // `aria-required` — which `role="radiogroup"` does
+                    // support — carries the one actually-required field in
+                    // this step to assistive tech, the same way `aria-required`
+                    // already does for every other field type in
+                    // CustomFormField.
+                    aria-label="Gender"
+                    aria-required={required || undefined}
                     className="grid grid-cols-2 gap-3 lg:grid-cols-3"
                     onValueChange={field.onChange}
                     value={String(field.value ?? "")}
                   >
-                    {GenderOptions.map((option) => (
+                    {GenderOptions.map((option, index) => (
                       <div key={option} className="radio-group">
-                        <RadioGroupItem value={option} id={option} />
+                        <RadioGroupItem
+                          // The only focusable element this field renders
+                          // that `form.setFocus("gender")` can reach — see
+                          // CustomFormField's SKELETON branch. Without it,
+                          // the error summary's "Select a gender" entry would
+                          // switch to this step and then land focus nowhere.
+                          // One radio is enough: focusing any item moves
+                          // focus into the group the same way Tab would.
+                          ref={index === 0 ? field.ref : undefined}
+                          value={option}
+                          id={option}
+                        />
                         <label
                           htmlFor={option}
                           className="cursor-pointer text-sm font-medium text-foreground"
@@ -351,7 +423,11 @@ export default function RegisterForm() {
         {/* ---------------------------- Medical ----------------------------- */}
         {step === "medical" ? (
           <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-            <h2 className="sub-header col-span-full text-foreground">
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="sub-header col-span-full text-foreground"
+            >
               Medical information
             </h2>
 
@@ -449,7 +525,11 @@ export default function RegisterForm() {
         {/* ------------------------- Identification ------------------------- */}
         {step === "identification" ? (
           <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-            <h2 className="sub-header col-span-full text-foreground">
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="sub-header col-span-full text-foreground"
+            >
               Identification and verification
             </h2>
 
@@ -507,7 +587,13 @@ export default function RegisterForm() {
                 thing you actually do on this step — rather than a fourth
                 summary card sitting alongside the ones above it. */}
             <section className="space-y-6 rounded-xl border border-green-500 bg-green-500/5 p-4">
-              <h2 className="sub-header text-foreground">Consent and privacy</h2>
+              <h2
+                ref={headingRef}
+                tabIndex={-1}
+                className="sub-header text-foreground"
+              >
+                Consent and privacy
+              </h2>
 
               <CustomFormField
                 fieldType={FormFieldType.CHECKBOX}
