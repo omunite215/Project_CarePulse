@@ -1,16 +1,15 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
 
 import CustomFormField, { FormFieldType } from "@/components/CustomFormField";
 import { FileUploader } from "@/components/FileUploader";
 import SubmitButton from "@/components/SubmitButton";
 import { FieldRequirements } from "@/components/forms/FieldRequirements";
-import { FormDraftNotice, useFormDraft } from "@/components/forms/useFormDraft";
-import { Form, FormControl } from "@/components/ui/form";
+import { useRegisterWizard } from "@/components/forms/RegisterWizardProvider";
+import { FormDraftNotice } from "@/components/forms/useFormDraft";
+import { FormControl } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SelectItem } from "@/components/ui/select";
 import {
@@ -20,10 +19,8 @@ import {
   IdentificationTypes,
 } from "@/constants";
 import { registerPatient } from "@/lib/actions/patient.actions";
-import type { User } from "@/lib/data/types";
 import { applyServerErrors, toastSuccess } from "@/lib/forms/apply-server-errors";
 import {
-  PatientFormDefaultValues,
   PatientFormValidation,
   type PatientFormValues,
 } from "@/lib/validation/patient";
@@ -38,21 +35,9 @@ import {
  * JSON blob under `payload`, which keeps a single Zod schema in charge of
  * validation on both sides instead of hand-parsing 22 FormData entries.
  */
-export default function RegisterForm({ user }: { user: User }) {
+export default function RegisterForm() {
   const router = useRouter();
-
-  const form = useForm<PatientFormValues>({
-    resolver: zodResolver(PatientFormValidation),
-    defaultValues: {
-      ...PatientFormDefaultValues,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-    },
-  });
-
-  // 22 fields is a lot to lose to a stray refresh.
-  const draft = useFormDraft(form, `register:${user.id}`);
+  const { user, form, draft } = useRegisterWizard();
 
   const selectedPhysician = form.watch("primaryPhysician");
 
@@ -78,317 +63,315 @@ export default function RegisterForm({ user }: { user: User }) {
   }
 
   return (
-    <Form {...form}>
+    <FieldRequirements schema={PatientFormValidation}>
       {/* One wrapper for all 22 fields rather than a `required` prop repeated
           at every call site. Scoped to this form's own schema so a field name
           this form shares with another form (there are none today, but the
           derivation is schema-based precisely so that could change safely) is
           judged by *this* validation, not a name collision. */}
-      <FieldRequirements schema={PatientFormValidation}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-12">
-          <section className="space-y-4">
-            <h1 className="header">Welcome 👋</h1>
-            <p className="text-foreground/80">
-              Let us know more about yourself so we can prepare for your visit.
-            </p>
-            <p className="text-12-regular text-muted-foreground">
-              <span aria-hidden="true">*</span> indicates a required field.
-            </p>
-            <FormDraftNotice draft={draft} />
-          </section>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-12">
+        <section className="space-y-4">
+          <h1 className="header">Welcome 👋</h1>
+          <p className="text-foreground/80">
+            Let us know more about yourself so we can prepare for your visit.
+          </p>
+          <p className="text-12-regular text-muted-foreground">
+            <span aria-hidden="true">*</span> indicates a required field.
+          </p>
+          <FormDraftNotice draft={draft} />
+        </section>
 
-          {/* ---------------------------- Personal ---------------------------- */}
-          <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-            <h2 className="sub-header col-span-full text-foreground">
-              Personal information
-            </h2>
+        {/* ---------------------------- Personal ---------------------------- */}
+        <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          <h2 className="sub-header col-span-full text-foreground">
+            Personal information
+          </h2>
 
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="name"
-              label="Full name"
-              placeholder="Jane Cooper"
-              iconSrc="/assets/icons/user.svg"
-              className="col-span-full"
-            />
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="name"
+            label="Full name"
+            placeholder="Jane Cooper"
+            iconSrc="/assets/icons/user.svg"
+            className="col-span-full"
+          />
 
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="email"
-              label="Email"
-              type="email"
-              inputMode="email"
-              placeholder="jane@example.com"
-              iconSrc="/assets/icons/email.svg"
-            />
-            <CustomFormField
-              fieldType={FormFieldType.PHONE_INPUT}
-              control={form.control}
-              name="phone"
-              label="Phone number"
-              placeholder="(555) 123-4567"
-            />
-            <CustomFormField
-              fieldType={FormFieldType.DATE_PICKER}
-              control={form.control}
-              name="birthDate"
-              label="Date of birth"
-              placeholder="Select your date of birth"
-              variant="birthdate"
-              /* An explicit floor: DayPicker's dropdown default is 100 years,
-                 which excludes living centenarians. */
-              fromDate={new Date(new Date().getFullYear() - 120, 0, 1)}
-              toDate={new Date()}
-            />
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="email"
+            label="Email"
+            type="email"
+            inputMode="email"
+            placeholder="jane@example.com"
+            iconSrc="/assets/icons/email.svg"
+          />
+          <CustomFormField
+            fieldType={FormFieldType.PHONE_INPUT}
+            control={form.control}
+            name="phone"
+            label="Phone number"
+            placeholder="(555) 123-4567"
+          />
+          <CustomFormField
+            fieldType={FormFieldType.DATE_PICKER}
+            control={form.control}
+            name="birthDate"
+            label="Date of birth"
+            placeholder="Select your date of birth"
+            variant="birthdate"
+            /* An explicit floor: DayPicker's dropdown default is 100 years,
+               which excludes living centenarians. */
+            fromDate={new Date(new Date().getFullYear() - 120, 0, 1)}
+            toDate={new Date()}
+          />
 
-            <CustomFormField
-              fieldType={FormFieldType.SKELETON}
-              control={form.control}
-              name="gender"
-              label="Gender"
-              renderSkeleton={(field) => (
-                <FormControl>
-                  {/* grid, not flex: equal cells hold their width instead of
-                      shrinking to their label text at narrow viewports. Two
-                      columns below `lg`: at 768px the content track is 512px
-                      (768 minus the 256px shell image track), minus a 48px
-                      page-shell gutter, split across two `gap-6` section
-                      columns — this field's cell is ~220px, not ~356px. Three
-                      equal columns would give "Female" ~65px of cell for
-                      ~127px of content (radio + gap + label) and it would
-                      overflow into "Other". Two columns give ~104px each —
-                      comfortable — and the third option wraps to a second row.
-                      Three-up returns at `lg`, where there is room again. */}
-                  <RadioGroup
-                    className="grid grid-cols-2 gap-3 lg:grid-cols-3"
-                    onValueChange={field.onChange}
-                    value={String(field.value ?? "")}
-                  >
-                    {GenderOptions.map((option) => (
-                      <div key={option} className="radio-group">
-                        <RadioGroupItem value={option} id={option} />
-                        <label
-                          htmlFor={option}
-                          className="cursor-pointer text-sm font-medium text-foreground"
-                        >
-                          {GenderLabels[option]}
-                        </label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-              )}
-            />
-
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="address"
-              label="Address"
-              placeholder="418 Maple Street, Springfield, IL"
-            />
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="occupation"
-              label="Occupation"
-              placeholder="Software Engineer"
-              description="We ask because some conditions are work-related."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="emergencyContactName"
-              label="Emergency contact name"
-              placeholder="Next of kin"
-              description="Someone we can call if we cannot reach you."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.PHONE_INPUT}
-              control={form.control}
-              name="emergencyContactNumber"
-              label="Emergency contact number"
-              placeholder="(555) 987-6543"
-            />
-          </section>
-
-          {/* ---------------------------- Medical ----------------------------- */}
-          <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-            <h2 className="sub-header col-span-full text-foreground">
-              Medical information
-            </h2>
-
-            {/* Full row until `2xl`: this is the Medical section's primary
-                field, and its dropdown items render doctor avatars that need
-                more room than a plain select — unlike `identificationType`
-                below, which stays a normal grid cell. */}
-            <CustomFormField
-              fieldType={FormFieldType.SELECT}
-              control={form.control}
-              name="primaryPhysician"
-              label="Primary care physician"
-              placeholder="Select a doctor"
-              className="col-span-full 2xl:col-span-1"
-            >
-              {Doctors.map((doctor) => (
-                <SelectItem
-                  key={doctor.name}
-                  value={doctor.name}
-                  className="shad-combobox-item"
+          <CustomFormField
+            fieldType={FormFieldType.SKELETON}
+            control={form.control}
+            name="gender"
+            label="Gender"
+            renderSkeleton={(field) => (
+              <FormControl>
+                {/* grid, not flex: equal cells hold their width instead of
+                    shrinking to their label text at narrow viewports. Two
+                    columns below `lg`: at 768px the content track is 512px
+                    (768 minus the 256px shell image track), minus a 48px
+                    page-shell gutter, split across two `gap-6` section
+                    columns — this field's cell is ~220px, not ~356px. Three
+                    equal columns would give "Female" ~65px of cell for
+                    ~127px of content (radio + gap + label) and it would
+                    overflow into "Other". Two columns give ~104px each —
+                    comfortable — and the third option wraps to a second row.
+                    Three-up returns at `lg`, where there is room again. */}
+                <RadioGroup
+                  className="grid grid-cols-2 gap-3 lg:grid-cols-3"
+                  onValueChange={field.onChange}
+                  value={String(field.value ?? "")}
                 >
-                  <span className="flex cursor-pointer items-center gap-2">
-                    <Image
-                      src={doctor.image}
-                      width={32}
-                      height={32}
-                      alt=""
-                      aria-hidden="true"
-                      className="rounded-full border border-border"
-                    />
-                    Dr. {doctor.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </CustomFormField>
+                  {GenderOptions.map((option) => (
+                    <div key={option} className="radio-group">
+                      <RadioGroupItem value={option} id={option} />
+                      <label
+                        htmlFor={option}
+                        className="cursor-pointer text-sm font-medium text-foreground"
+                      >
+                        {GenderLabels[option]}
+                      </label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+            )}
+          />
 
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="insuranceProvider"
-              label="Insurance provider"
-              placeholder="Blue Shield"
-            />
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="insurancePolicyNumber"
-              label="Insurance policy number"
-              placeholder="ABC1234567"
-            />
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="address"
+            label="Address"
+            placeholder="418 Maple Street, Springfield, IL"
+          />
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="occupation"
+            label="Occupation"
+            placeholder="Software Engineer"
+            description="We ask because some conditions are work-related."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="emergencyContactName"
+            label="Emergency contact name"
+            placeholder="Next of kin"
+            description="Someone we can call if we cannot reach you."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.PHONE_INPUT}
+            control={form.control}
+            name="emergencyContactNumber"
+            label="Emergency contact number"
+            placeholder="(555) 987-6543"
+          />
+        </section>
 
-            <CustomFormField
-              fieldType={FormFieldType.TEXTAREA}
-              control={form.control}
-              name="allergies"
-              label="Allergies (if any)"
-              placeholder="Peanuts, penicillin, pollen"
-              className="md:col-span-2"
-              maxLength={500}
-              description="Include medicines, foods and anything else you react to. Leave blank if none. Up to 500 characters."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.TEXTAREA}
-              control={form.control}
-              name="currentMedication"
-              label="Current medication (if any)"
-              placeholder="Ibuprofen 200mg, Levothyroxine 50mcg"
-              className="md:col-span-2"
-              maxLength={500}
-              description="Name and dose, if you know it. An approximate list is still useful. Up to 500 characters."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.TEXTAREA}
-              control={form.control}
-              name="familyMedicalHistory"
-              label="Family medical history"
-              placeholder="Mother had brain cancer, father has hypertension"
-              className="md:col-span-2"
-              maxLength={500}
-              description="Conditions that run in your family, and who had them. Up to 500 characters."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.TEXTAREA}
-              control={form.control}
-              name="pastMedicalHistory"
-              label="Past medical history"
-              placeholder="Appendectomy in 2015, asthma diagnosis in childhood"
-              className="md:col-span-2"
-              maxLength={500}
-              description="Past operations, hospital stays or long-term conditions. Up to 500 characters."
-            />
-          </section>
+        {/* ---------------------------- Medical ----------------------------- */}
+        <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          <h2 className="sub-header col-span-full text-foreground">
+            Medical information
+          </h2>
 
-          {/* ------------------------- Identification ------------------------- */}
-          <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-            <h2 className="sub-header col-span-full text-foreground">
-              Identification and verification
-            </h2>
-
-            <CustomFormField
-              fieldType={FormFieldType.SELECT}
-              control={form.control}
-              name="identificationType"
-              label="Identification type"
-              placeholder="Select an identification type"
-            >
-              {IdentificationTypes.map((type) => (
-                <SelectItem key={type} value={type} className="shad-combobox-item">
-                  {type}
-                </SelectItem>
-              ))}
-            </CustomFormField>
-
-            <CustomFormField
-              fieldType={FormFieldType.INPUT}
-              control={form.control}
-              name="identificationNumber"
-              label="Identification number"
-              placeholder="123456789"
-            />
-
-            <CustomFormField
-              fieldType={FormFieldType.SKELETON}
-              control={form.control}
-              name="identificationDocument"
-              label="Scanned copy of identification document"
-              className="col-span-full"
-              renderSkeleton={(field) => (
-                <FormControl>
-                  <FileUploader
-                    files={field.value as File[] | undefined}
-                    onChange={field.onChange}
-                  />
-                </FormControl>
-              )}
-            />
-          </section>
-
-          {/* ----------------------------- Consent ---------------------------- */}
-          <section className="space-y-6">
-            <h2 className="sub-header text-foreground">Consent and privacy</h2>
-
-            <CustomFormField
-              fieldType={FormFieldType.CHECKBOX}
-              control={form.control}
-              name="treatmentConsent"
-              checkboxLabel="I consent to receive treatment for my health condition."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.CHECKBOX}
-              control={form.control}
-              name="disclosureConsent"
-              checkboxLabel="I consent to the use and disclosure of my health information for treatment purposes."
-            />
-            <CustomFormField
-              fieldType={FormFieldType.CHECKBOX}
-              control={form.control}
-              name="privacyConsent"
-              checkboxLabel="I acknowledge that I have reviewed and agree to the privacy policy."
-            />
-          </section>
-
-          <SubmitButton
-            isLoading={form.formState.isSubmitting}
-            loadingLabel="Submitting…"
+          {/* Full row until `2xl`: this is the Medical section's primary
+              field, and its dropdown items render doctor avatars that need
+              more room than a plain select — unlike `identificationType`
+              below, which stays a normal grid cell. */}
+          <CustomFormField
+            fieldType={FormFieldType.SELECT}
+            control={form.control}
+            name="primaryPhysician"
+            label="Primary care physician"
+            placeholder="Select a doctor"
+            className="col-span-full 2xl:col-span-1"
           >
-            {selectedPhysician
-              ? `Continue with Dr. ${selectedPhysician}`
-              : "Submit and continue"}
-          </SubmitButton>
-        </form>
-      </FieldRequirements>
-    </Form>
+            {Doctors.map((doctor) => (
+              <SelectItem
+                key={doctor.name}
+                value={doctor.name}
+                className="shad-combobox-item"
+              >
+                <span className="flex cursor-pointer items-center gap-2">
+                  <Image
+                    src={doctor.image}
+                    width={32}
+                    height={32}
+                    alt=""
+                    aria-hidden="true"
+                    className="rounded-full border border-border"
+                  />
+                  Dr. {doctor.name}
+                </span>
+              </SelectItem>
+            ))}
+          </CustomFormField>
+
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="insuranceProvider"
+            label="Insurance provider"
+            placeholder="Blue Shield"
+          />
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="insurancePolicyNumber"
+            label="Insurance policy number"
+            placeholder="ABC1234567"
+          />
+
+          <CustomFormField
+            fieldType={FormFieldType.TEXTAREA}
+            control={form.control}
+            name="allergies"
+            label="Allergies (if any)"
+            placeholder="Peanuts, penicillin, pollen"
+            className="md:col-span-2"
+            maxLength={500}
+            description="Include medicines, foods and anything else you react to. Leave blank if none. Up to 500 characters."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.TEXTAREA}
+            control={form.control}
+            name="currentMedication"
+            label="Current medication (if any)"
+            placeholder="Ibuprofen 200mg, Levothyroxine 50mcg"
+            className="md:col-span-2"
+            maxLength={500}
+            description="Name and dose, if you know it. An approximate list is still useful. Up to 500 characters."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.TEXTAREA}
+            control={form.control}
+            name="familyMedicalHistory"
+            label="Family medical history"
+            placeholder="Mother had brain cancer, father has hypertension"
+            className="md:col-span-2"
+            maxLength={500}
+            description="Conditions that run in your family, and who had them. Up to 500 characters."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.TEXTAREA}
+            control={form.control}
+            name="pastMedicalHistory"
+            label="Past medical history"
+            placeholder="Appendectomy in 2015, asthma diagnosis in childhood"
+            className="md:col-span-2"
+            maxLength={500}
+            description="Past operations, hospital stays or long-term conditions. Up to 500 characters."
+          />
+        </section>
+
+        {/* ------------------------- Identification ------------------------- */}
+        <section className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          <h2 className="sub-header col-span-full text-foreground">
+            Identification and verification
+          </h2>
+
+          <CustomFormField
+            fieldType={FormFieldType.SELECT}
+            control={form.control}
+            name="identificationType"
+            label="Identification type"
+            placeholder="Select an identification type"
+          >
+            {IdentificationTypes.map((type) => (
+              <SelectItem key={type} value={type} className="shad-combobox-item">
+                {type}
+              </SelectItem>
+            ))}
+          </CustomFormField>
+
+          <CustomFormField
+            fieldType={FormFieldType.INPUT}
+            control={form.control}
+            name="identificationNumber"
+            label="Identification number"
+            placeholder="123456789"
+          />
+
+          <CustomFormField
+            fieldType={FormFieldType.SKELETON}
+            control={form.control}
+            name="identificationDocument"
+            label="Scanned copy of identification document"
+            className="col-span-full"
+            renderSkeleton={(field) => (
+              <FormControl>
+                <FileUploader
+                  files={field.value as File[] | undefined}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+            )}
+          />
+        </section>
+
+        {/* ----------------------------- Consent ---------------------------- */}
+        <section className="space-y-6">
+          <h2 className="sub-header text-foreground">Consent and privacy</h2>
+
+          <CustomFormField
+            fieldType={FormFieldType.CHECKBOX}
+            control={form.control}
+            name="treatmentConsent"
+            checkboxLabel="I consent to receive treatment for my health condition."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.CHECKBOX}
+            control={form.control}
+            name="disclosureConsent"
+            checkboxLabel="I consent to the use and disclosure of my health information for treatment purposes."
+          />
+          <CustomFormField
+            fieldType={FormFieldType.CHECKBOX}
+            control={form.control}
+            name="privacyConsent"
+            checkboxLabel="I acknowledge that I have reviewed and agree to the privacy policy."
+          />
+        </section>
+
+        <SubmitButton
+          isLoading={form.formState.isSubmitting}
+          loadingLabel="Submitting…"
+        >
+          {selectedPhysician
+            ? `Continue with Dr. ${selectedPhysician}`
+            : "Submit and continue"}
+        </SubmitButton>
+      </form>
+    </FieldRequirements>
   );
 }
