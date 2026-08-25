@@ -53,6 +53,11 @@ export function FormErrorSummary() {
   // Keyed on `failedAttempts` rather than `form.formState.submitCount` for
   // the same reason the visibility gate above is: a failed "Continue" never
   // touches `submitCount`, and this focus move has to fire for that case too.
+  // Updated whether or not that attempt had anything to focus (see the
+  // effect below) — a failed submit with no `fieldErrors` still increments
+  // `failedAttempts` in `RegisterForm`, and leaving this ref stale for that
+  // attempt would make the very next unrelated field error look like a new
+  // attempt too.
   const focusedForAttempt = useRef(0);
 
   // Filtered to real schema fields, and ordered by the wizard rather than by
@@ -69,10 +74,21 @@ export function FormErrorSummary() {
   );
 
   useEffect(() => {
-    if (names.length === 0 || failedAttempts === focusedForAttempt.current) {
-      return;
-    }
+    if (failedAttempts === focusedForAttempt.current) return;
+    // Marked as seen before the `names.length` check below, and
+    // unconditionally: a failed submit that lands only a toast (no
+    // `fieldErrors` — see `applyServerErrors`) still increments
+    // `failedAttempts` in `RegisterForm` even though there is nothing here to
+    // focus. If this line ran only on the `names.length > 0` branch, that
+    // attempt would never get marked seen — and once `handleSubmit` has set
+    // `isSubmitted`, react-hook-form's `reValidateMode` default validates
+    // every subsequent change live, so the first field error created by an
+    // ordinary edit afterwards (e.g. unticking a consent checkbox) would flip
+    // `names.length` from 0 to 1 and look like that same stale attempt
+    // finally producing something to focus, yanking focus to the summary
+    // away from whatever the user was doing.
     focusedForAttempt.current = failedAttempts;
+    if (names.length === 0) return;
     ref.current?.focus();
   }, [failedAttempts, names.length]);
 

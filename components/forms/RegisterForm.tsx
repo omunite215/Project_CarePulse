@@ -95,9 +95,14 @@ export default function RegisterForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
   // The current step's own heading, so focus can follow the content instead
-  // of dropping to <body> — see the effect below. Only one step's <h2> (or,
-  // on the review step, the consent section's) is ever mounted at a time, so
-  // one ref shared across all of them is safe.
+  // of dropping to <body> — see the effect below. On the review step this is
+  // deliberately its own heading placed above `RegisterReview`, not the
+  // "Consent and privacy" heading further down: that heading sits below
+  // three summary sections, so focusing it would drop a screen-reader user
+  // reading forward straight past the entire summary and into the consent
+  // checkboxes — never encountering what they are being asked to consent
+  // to. Only one step's own heading is ever mounted at a time, so one ref
+  // shared across all of them is safe.
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // The `step`/`failedAttempts` pair last seen by the effect below, so it can
@@ -124,7 +129,13 @@ export default function RegisterForm() {
     // moment later. Inferring that from the two values changing together,
     // rather than a flag one branch sets and this effect clears, is what
     // keeps this safe from a future failure branch that adds a new way to
-    // route without remembering to set such a flag.
+    // route without remembering to set such a flag. That "changing
+    // together" is only observable because React batches
+    // `recordFailedAttempt`'s `useState` update and `setStep`'s nuqs update
+    // into the same commit — nuqs v2's setter is itself a synchronous React
+    // state update, not a separate async navigation — so a routed failed
+    // submit always changes `step` and `failedAttempts` in one render, never
+    // two.
     if (stepChanged && !attemptsChanged) headingRef.current?.focus();
   }, [step, failedAttempts]);
 
@@ -585,17 +596,26 @@ export default function RegisterForm() {
         {/* ------------------------- Review and consent ---------------------- */}
         {step === "review" ? (
           <>
+            {/* The review step's own heading, above the summary rather than
+                folded into the "Consent and privacy" section below it — see
+                the note on `headingRef`. A patient reading forward from here
+                meets what they entered before they meet what they are
+                agreeing to. */}
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="sub-header text-foreground"
+            >
+              Check your answers
+            </h2>
+
             <RegisterReview />
 
             {/* Distinguishing border/tint so this reads as the action — the
                 thing you actually do on this step — rather than a fourth
                 summary card sitting alongside the ones above it. */}
             <section className="space-y-6 rounded-xl border border-green-500 bg-green-500/5 p-4">
-              <h2
-                ref={headingRef}
-                tabIndex={-1}
-                className="sub-header text-foreground"
-              >
+              <h2 className="sub-header text-foreground">
                 Consent and privacy
               </h2>
 

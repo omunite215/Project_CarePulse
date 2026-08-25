@@ -119,6 +119,32 @@ describe("FormErrorSummary gating (I-1)", () => {
       screen.getByRole("heading", { name: "Personal information" }),
     ).toBeInTheDocument();
   });
+
+  it("moves focus to the summary again on a second failed Continue", async () => {
+    renderStep1();
+
+    const continueButton = screen.getByRole("button", { name: /^continue$/i });
+    fireEvent.click(continueButton);
+
+    const heading = await screen.findByText(/answers? need.? your attention/i);
+    const summary = heading.closest("[aria-labelledby]");
+    expect(summary).not.toBeNull();
+    await waitFor(() => expect(summary).toHaveFocus());
+
+    // Move focus away, the way a user re-reading the form would, before
+    // trying "Continue" again with nothing fixed.
+    const address = screen.getByLabelText(/^address/i);
+    address.focus();
+    expect(address).toHaveFocus();
+
+    // Still empty, so this fails for the same reason as the first attempt —
+    // and, unlike an attempt with nothing to focus (see
+    // `form-error-summary.test.tsx`), this one has plenty to focus, so the
+    // hoisted `focusedForAttempt.current` update must not suppress the
+    // second focus move.
+    fireEvent.click(continueButton);
+    await waitFor(() => expect(summary).toHaveFocus());
+  });
 });
 
 describe("focus follows the step (I-2)", () => {
@@ -141,6 +167,45 @@ describe("focus follows the step (I-2)", () => {
       name: "Medical information",
     });
     await waitFor(() => expect(medicalHeading).toHaveFocus());
+  });
+
+  it("lands focus above the review summary, not below it, when arriving at the review step", async () => {
+    render(
+      <NuqsTestingAdapter searchParams="?step=identification">
+        <RegisterWizardProvider user={emptyUser}>
+          <RegisterForm />
+        </RegisterWizardProvider>
+      </NuqsTestingAdapter>,
+    );
+
+    // "Skip this step" — like a successful "Continue" — calls `setStep`
+    // directly with no `recordFailedAttempt`, so this is the ordinary
+    // step-change path the heading-focus effect exists for, not the
+    // failed-submit routing path exercised below.
+    fireEvent.click(screen.getByRole("button", { name: /skip this step/i }));
+
+    // Proof `RegisterReview` actually mounted on this step, not just that
+    // *some* heading exists.
+    const summaryHeading = await screen.findByRole("heading", {
+      name: "Personal information",
+    });
+
+    await waitFor(() => {
+      expect(document.activeElement).not.toBe(document.body);
+    });
+    const focused = document.activeElement as Node;
+
+    // Document order, not identity: focus must land *before* the summary,
+    // so a screen reader reading forward from focus meets the summary
+    // before the consent checkboxes below it. Focusing the "Consent and
+    // privacy" heading — which sits after all three summary sections —
+    // would still be *a* heading gaining focus, so only checking identity
+    // or `toHaveFocus()` against the wrong node would not catch that;
+    // `compareDocumentPosition` is what actually proves the ordering.
+    expect(
+      focused.compareDocumentPosition(summaryHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("focuses the error summary, not the routed-to step's heading, when a failed submit routes there", async () => {

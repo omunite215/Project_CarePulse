@@ -127,6 +127,64 @@ describe("FormErrorSummary", () => {
 });
 
 /**
+ * Mirrors `applyServerErrors`'s toast-only branch (no `fieldErrors`): a
+ * failed attempt that leaves `names` at zero even though `failedAttempts`
+ * increments — `RegisterForm` calls `recordFailedAttempt()` unconditionally
+ * on that branch (around line 220 there), not only when there is something
+ * to focus.
+ *
+ * A second, unrelated field then goes invalid *without* a further
+ * `recordFailedAttempt()` call — standing in for the real trigger (an
+ * ordinary edit validating live once `isSubmitted` is true, per
+ * react-hook-form's `reValidateMode` default) without needing to drive an
+ * actual failed submission through `RegisterForm` to get there.
+ */
+function AttemptWithNothingToFocusThenAnUnrelatedFieldError() {
+  const { form, recordFailedAttempt } = useRegisterWizard();
+  const seeded = useRef(false);
+
+  useEffect(() => {
+    if (seeded.current) return;
+    seeded.current = true;
+
+    void (async () => {
+      recordFailedAttempt();
+      await form.trigger("privacyConsent");
+    })();
+  }, [form, recordFailedAttempt]);
+
+  return <FormErrorSummary />;
+}
+
+describe("an attempt with nothing to focus", () => {
+  it("does not steal focus for a later, unrelated field error", async () => {
+    render(
+      <NuqsTestingAdapter searchParams="?step=review">
+        <RegisterWizardProvider user={user}>
+          <AttemptWithNothingToFocusThenAnUnrelatedFieldError />
+        </RegisterWizardProvider>
+      </NuqsTestingAdapter>,
+    );
+
+    // The summary only becomes visible once the unrelated field error
+    // lands — proof `names.length` actually made the 0 -> 1 transition this
+    // test is about, not merely that nothing rendered.
+    const heading = await screen.findByRole("heading", {
+      name: "One answer needs your attention",
+    });
+    const summary = heading.closest("[aria-labelledby]");
+    expect(summary).not.toBeNull();
+
+    // Without hoisting `focusedForAttempt.current`'s update above the
+    // `names.length` guard, this transition reads as "a new attempt just
+    // failed" and steals focus to the summary — even though the attempt
+    // that actually failed had nothing to focus, and this field error is
+    // just an ordinary side effect of the user correcting something else.
+    expect(summary).not.toHaveFocus();
+  });
+});
+
+/**
  * Renders each step's own field the way `RegisterForm` does — conditional on
  * `step`, not always mounted — so `goToField`'s step switch and `setFocus`
  * have a real DOM node to land on instead of nothing.
