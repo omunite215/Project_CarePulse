@@ -29,7 +29,14 @@ export interface RegisterStep {
 // literal's own narrower shape, so an optional key present on one entry
 // (e.g. `hint`, `optional`) is absent from the others' types and reading it
 // off the union fails to compile.
-export const REGISTER_STEPS: readonly RegisterStep[] = [
+//
+// Non-empty tuple, not `RegisterStep[]`: under `noUncheckedIndexedAccess` a
+// plain array makes every indexed read `| undefined`, which forced a non-null
+// assertion just to reach the first step. A non-empty tuple tells the compiler
+// index 0 exists, while `[i + 1]` correctly stays `| undefined` — the wizard's
+// last step genuinely has no next, and that case should be handled, not
+// asserted away.
+export const REGISTER_STEPS: readonly [RegisterStep, ...RegisterStep[]] = [
   {
     id: "personal",
     title: "Personal information",

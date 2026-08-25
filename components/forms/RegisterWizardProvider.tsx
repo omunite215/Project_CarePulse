@@ -85,10 +85,7 @@ export function RegisterWizardProvider({
    */
   const [step, setRawStep] = useQueryState(
     "step",
-    // REGISTER_STEPS is non-empty by construction (it lists all four wizard
-    // steps); the `!` only silences `noUncheckedIndexedAccess`, which cannot
-    // see that guarantee through the array's type.
-    parseAsStringLiteral(REGISTER_STEP_IDS).withDefault(REGISTER_STEPS[0]!.id),
+    parseAsStringLiteral(REGISTER_STEP_IDS).withDefault(REGISTER_STEPS[0].id),
   );
 
   const value = useMemo<RegisterWizardValue>(
@@ -99,6 +96,8 @@ export function RegisterWizardProvider({
       step,
       stepIndex: stepIndexOf(step),
       setStep: (id) => {
+        // setRawStep relies on nuqs's `shallow` defaulting to `true` to avoid
+        // triggering a Server Component round-trip on every step change.
         void setRawStep(id, { history: "push" });
         // A new step starts at the top; otherwise a short step inherits the
         // scroll position of a long one and opens part-way down.
