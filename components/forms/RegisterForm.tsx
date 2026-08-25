@@ -48,7 +48,8 @@ import {
  */
 export default function RegisterForm() {
   const router = useRouter();
-  const { user, form, draft, step, stepIndex, setStep } = useRegisterWizard();
+  const { user, form, draft, step, stepIndex, setStep, recordFailedAttempt } =
+    useRegisterWizard();
 
   const selectedPhysician = form.watch("primaryPhysician");
 
@@ -65,7 +66,14 @@ export default function RegisterForm() {
     // Validate only this step's fields. Validating the whole schema here would
     // show step 3's errors while the user is still on step 1.
     const valid = await form.trigger([...current.fields]);
-    if (!valid) return;
+    if (!valid) {
+      // A failed "Continue" never touches `form.formState.submitCount` — this
+      // is the other half of the signal `FormErrorSummary` gates on. Without
+      // it, a user who never reaches the last step's Submit button would
+      // never see the summary at all.
+      recordFailedAttempt();
+      return;
+    }
     setStep(next.id);
   }
 
@@ -126,6 +134,10 @@ export default function RegisterForm() {
   // behind on an earlier step made "Complete registration" look inert: no
   // navigation, no visible error, nothing.
   function onInvalid(errors: FieldErrors<PatientFormValues>) {
+    // A genuine failed submit — the other half of the signal
+    // `FormErrorSummary` gates on (see `goNext` above).
+    recordFailedAttempt();
+
     const erroredSteps = new Set(
       (Object.keys(errors) as (keyof PatientFormValues)[])
         // A cross-field `.refine` on the schema emits an issue with an empty
@@ -164,6 +176,9 @@ export default function RegisterForm() {
 
     if (!result.ok) {
       applyServerErrors(form, result);
+      // A genuine failed submit, same as a client-validation failure in
+      // `onInvalid` — the server rejected it just as surely.
+      recordFailedAttempt();
 
       // A server field error can land on a step the user is no longer on —
       // the Appwrite adapter's duplicate-phone error targets `phone`, which

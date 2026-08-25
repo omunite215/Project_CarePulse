@@ -40,9 +40,15 @@ const user: User = {
  * `formState.errors` is exactly the call order. If the summary listed
  * `Object.keys(errors)` in that order instead of wizard order, it would read
  * review, medical, personal — the reverse of what the test below asserts.
+ *
+ * `recordFailedAttempt` is called once after seeding: `FormErrorSummary` only
+ * renders once `failedAttempts > 0` (see I-1), a gate this harness has to
+ * satisfy the same way a real failed submit or failed "Continue" would,
+ * since `form.trigger` alone — unlike `goNext` or a real submit — does not
+ * touch that counter.
  */
 function SeedErrorsOutOfOrder() {
-  const { form } = useRegisterWizard();
+  const { form, recordFailedAttempt } = useRegisterWizard();
   const seeded = useRef(false);
 
   useEffect(() => {
@@ -54,8 +60,9 @@ function SeedErrorsOutOfOrder() {
       await form.trigger("primaryPhysician");
       form.setValue("email", "");
       await form.trigger("email");
+      recordFailedAttempt();
     })();
-  }, [form]);
+  }, [form, recordFailedAttempt]);
 
   return <FormErrorSummary />;
 }

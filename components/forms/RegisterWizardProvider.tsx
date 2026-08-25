@@ -2,7 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { createContext, use, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 
 import { useFormDraft, type FormDraft } from "@/components/forms/useFormDraft";
@@ -27,6 +34,24 @@ interface RegisterWizardValue {
   step: RegisterStepId;
   stepIndex: number;
   setStep: (id: RegisterStepId) => void;
+  /**
+   * How many times a submit or a per-step "Continue" has failed validation
+   * this session. `FormErrorSummary` shows only once this is greater than
+   * zero, rather than whenever any error exists — see `recordFailedAttempt`
+   * for why a submit count alone cannot serve as that signal.
+   */
+  failedAttempts: number;
+  /**
+   * Call once per failed submit and once per failed `goNext` ("Continue").
+   * `form.formState.submitCount` cannot stand in for this on its own: it only
+   * increments on an actual submit, so a wizard user who fails "Continue" on
+   * step 1 and never reaches the last step's Submit button would never flip
+   * a `submitCount`-only gate, even though that is exactly the case
+   * `FormErrorSummary` needs to cover. A plain field blur touches neither
+   * this nor `submitCount`, which is what keeps the summary from appearing
+   * before either has actually been attempted.
+   */
+  recordFailedAttempt: () => void;
 }
 
 const RegisterWizardContext = createContext<RegisterWizardValue | null>(null);
@@ -88,6 +113,14 @@ export function RegisterWizardProvider({
     parseAsStringLiteral(REGISTER_STEP_IDS).withDefault(REGISTER_STEPS[0].id),
   );
 
+  // See `recordFailedAttempt` on the context type for why this exists
+  // alongside (not instead of) `form.formState.submitCount`.
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const recordFailedAttempt = useCallback(
+    () => setFailedAttempts((count) => count + 1),
+    [],
+  );
+
   const value = useMemo<RegisterWizardValue>(
     () => ({
       user,
@@ -103,8 +136,10 @@ export function RegisterWizardProvider({
         // scroll position of a long one and opens part-way down.
         window.scrollTo({ top: 0, behavior: "smooth" });
       },
+      failedAttempts,
+      recordFailedAttempt,
     }),
-    [user, form, draft, step, setRawStep],
+    [user, form, draft, step, setRawStep, failedAttempts, recordFailedAttempt],
   );
 
   return (

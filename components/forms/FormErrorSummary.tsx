@@ -7,7 +7,17 @@ import { REGISTER_STEPS, stepOwningField } from "@/lib/forms/register-steps";
 import type { PatientFormValues } from "@/lib/validation/patient";
 
 /**
- * Lists everything wrong after a failed submit and routes to each field.
+ * Lists everything wrong after a failed submit (or a failed per-step
+ * "Continue") and routes to each field.
+ *
+ * Deliberately gated on `failedAttempts > 0`, not merely on `names.length >
+ * 0`: the wizard's fields validate with `mode: "onTouched"`
+ * (`RegisterWizardProvider`), which populates `formState.errors` on plain
+ * blur — long before any submit. Gating on error existence alone would mount
+ * this panel, live region and all, the moment someone blurs a single empty
+ * required field while still filling in the rest of the form. `failedAttempts`
+ * only increments on an actual failed validation attempt (see
+ * `recordFailedAttempt` on the wizard context), which a blur is not.
  *
  * Each entry is a button, not an anchor. Fields on other steps are not in the
  * DOM, so a fragment link has nothing to target — it has to switch step first
@@ -27,7 +37,7 @@ import type { PatientFormValues } from "@/lib/validation/patient";
  * patient-facing medical form, that redundancy is the right trade.
  */
 export function FormErrorSummary() {
-  const { form, setStep, step } = useRegisterWizard();
+  const { form, setStep, step, failedAttempts } = useRegisterWizard();
   const errors = form.formState.errors;
   const ref = useRef<HTMLDivElement>(null);
   const headingId = useId();
@@ -36,11 +46,14 @@ export function FormErrorSummary() {
   // cleared once that step has actually rendered (see the effect below).
   const pendingFocus = useRef<keyof PatientFormValues | null>(null);
 
-  // The submitCount already focused, so the effect below can tell "a new
-  // submit just failed" apart from "the user fixed one field while three
-  // others are still invalid" — the latter changes `names.length` too, but
-  // must not yank focus away from the field they are mid-correction on.
-  const focusedForSubmit = useRef(0);
+  // The `failedAttempts` value already focused, so the effect below can tell
+  // "a new attempt just failed" apart from "the user fixed one field while
+  // three others are still invalid" — the latter changes `names.length` too,
+  // but must not yank focus away from the field they are mid-correction on.
+  // Keyed on `failedAttempts` rather than `form.formState.submitCount` for
+  // the same reason the visibility gate above is: a failed "Continue" never
+  // touches `submitCount`, and this focus move has to fire for that case too.
+  const focusedForAttempt = useRef(0);
 
   // Filtered to real schema fields, and ordered by the wizard rather than by
   // `Object.keys`. Built by walking each step's own field list, not
@@ -56,11 +69,12 @@ export function FormErrorSummary() {
   );
 
   useEffect(() => {
-    const submitCount = form.formState.submitCount;
-    if (names.length === 0 || submitCount === focusedForSubmit.current) return;
-    focusedForSubmit.current = submitCount;
+    if (names.length === 0 || failedAttempts === focusedForAttempt.current) {
+      return;
+    }
+    focusedForAttempt.current = failedAttempts;
     ref.current?.focus();
-  }, [form.formState.submitCount, names.length]);
+  }, [failedAttempts, names.length]);
 
   // Focuses the target field once its step has actually mounted, instead of
   // guessing how long a step switch takes. This effect is keyed on `step`
@@ -75,7 +89,7 @@ export function FormErrorSummary() {
     form.setFocus(name);
   }, [step, form]);
 
-  if (names.length === 0) return null;
+  if (failedAttempts === 0 || names.length === 0) return null;
 
   function goToField(name: keyof PatientFormValues) {
     const owner = stepOwningField(name);
