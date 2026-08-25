@@ -138,13 +138,14 @@ const REGISTER_STEP_IDS = ["personal", "medical", "identification", "review"] as
  * Each step's own section heading, used to prove the walk below actually
  * reached that step.
  *
- * Not the compact "Step N of 4" progress bar: that widget is added by a
- * later task in the plan and does not exist in the DOM yet, so asserting on
- * it here would fail for a reason that has nothing to do with overflow. Each
- * step's heading is already unique and present today, and serves the same
- * purpose — if the `?step=` param were ignored, every iteration below would
- * keep showing "Personal information" and every heading after the first
- * would fail to appear.
+ * Not the compact "Step N of 4" progress bar (`RegisterStepProgress`): that
+ * widget exists in the DOM now, but it's CSS-hidden at `md` and up (`md:hidden`),
+ * so asserting on it at the desktop widths in `WIDTHS` would fail for a
+ * reason that has nothing to do with overflow. Each step's heading is unique
+ * and present at every width regardless, and serves the same purpose — if
+ * the `?step=` param were ignored, every iteration below would keep showing
+ * "Personal information" and every heading after the first would fail to
+ * appear.
  */
 const REGISTER_STEP_HEADINGS: Record<(typeof REGISTER_STEP_IDS)[number], RegExp> = {
   personal: /personal information/i,

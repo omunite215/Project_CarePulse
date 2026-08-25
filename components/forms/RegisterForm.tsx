@@ -248,10 +248,14 @@ export default function RegisterForm() {
   return (
     <FieldRequirements schema={PatientFormValidation}>
       {/* One wrapper for all 22 fields rather than a `required` prop repeated
-          at every call site. Scoped to this form's own schema so a field name
-          this form shares with another form (there are none today, but the
-          derivation is schema-based precisely so that could change safely) is
-          judged by *this* validation, not a name collision. */}
+          at every call site. Scoped to this form's own schema because field
+          names are not unique across forms: `name`, `email`, `phone` and
+          `primaryPhysician` are also fields on `AppointmentForm`/`PatientForm`.
+          Without this provider's schema scoping, deriving "required" from a
+          bare field name would star those forms' fields too, purely by
+          coincidence — `useFieldRequired` resolving to `false` with no
+          provider in the tree is what keeps them unaffected, and
+          `tests/other-forms-unaffected.test.tsx` pins exactly that. */}
       <form
         ref={formRef}
         onSubmit={form.handleSubmit(onSubmit, onInvalid)}

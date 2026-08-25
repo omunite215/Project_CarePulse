@@ -138,9 +138,10 @@ test.describe("patient screens", () => {
     ).toBeVisible();
     await shot(page, "04-register-medical");
 
-    // Still titled "Consent and privacy" at this point in the plan — the
-    // "review" step id does not yet have a review summary or a renamed
-    // heading (that lands in a later task).
+    // Titled "Consent and privacy", not "Review and consent": that's only
+    // the step's internal `title` (used by the step indicator and, since a
+    // later task, `RegisterReview`'s own summary above this heading) — no
+    // element on screen carries the step's `title` text directly.
     await page.goto(`${base}?step=review`);
     await expect(
       page.getByRole("heading", { name: /consent and privacy/i }),

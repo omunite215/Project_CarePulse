@@ -53,7 +53,20 @@ export function useFormDraft<T extends FieldValues>(
   const [restored, setRestored] = useState(false);
   const hasRestored = useRef(false);
 
+  // Shared with the debounced-save effect below, so `clear()` can cancel a
+  // write that is still pending — see the comment on `clear` itself.
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
   const clear = useCallback(() => {
+    // The debounce timer lives in a different effect's closure (below), on a
+    // schedule independent of anything that calls `clear()`. Without this,
+    // submitting within 800ms of the last keystroke let the pending write
+    // land *after* `removeItem`, silently resurrecting the full draft —
+    // including health data — in localStorage on a machine the user has just
+    // been redirected away from.
+    clearTimeout(saveTimerRef.current);
     window.localStorage.removeItem(storageKey);
     setSaved(false);
   }, [storageKey]);
@@ -73,10 +86,28 @@ export function useFormDraft<T extends FieldValues>(
         return;
       }
 
+      // `JSON.stringify` cannot round-trip a `Date` — it serialises to an
+      // ISO string, and `JSON.parse` hands that string straight back
+      // unchanged. Every other field this form saves is already a string (or
+      // boolean, or array of strings), so a string draft value matches its
+      // schema type as-is; `birthDate` is the one field whose schema is
+      // `z.date()`, so a plain restore leaves a value that *looks* answered
+      // (`DateField`'s `parseDate` happily renders a string) but fails
+      // validation the moment "Continue" tries to move past it. Reviving just
+      // this one named field — rather than a generic "does this string look
+      // like a date" check applied to every value — keeps the fix scoped to
+      // the actual serialisation gap instead of risking a false-positive
+      // revive on some unrelated string field a future form might save.
+      const values = { ...parsed.values } as Record<string, unknown>;
+      if (typeof values.birthDate === "string") {
+        const revived = new Date(values.birthDate);
+        if (!Number.isNaN(revived.getTime())) values.birthDate = revived;
+      }
+
       // `keepDefaultValues` preserves the server-provided name/email/phone,
       // which should win over anything stale in the draft.
       form.reset(
-        { ...form.getValues(), ...parsed.values },
+        { ...form.getValues(), ...(values as Partial<T>) },
         { keepDefaultValues: true },
       );
       setRestored(true);
@@ -87,11 +118,9 @@ export function useFormDraft<T extends FieldValues>(
 
   // Debounced save.
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-
     const subscription = form.watch((values) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
         try {
           const safe = Object.fromEntries(
             Object.entries(values as Record<string, unknown>).filter(
@@ -111,7 +140,7 @@ export function useFormDraft<T extends FieldValues>(
     });
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(saveTimerRef.current);
       subscription.unsubscribe();
     };
   }, [form, storageKey]);

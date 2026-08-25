@@ -91,11 +91,12 @@ const REGISTER_STEP_IDS = ["personal", "medical", "identification", "review"] as
  * Each step's own section heading, used to confirm a capture landed on the
  * step its filename claims.
  *
- * Not the compact "Step N of 4" progress bar: that widget belongs to a later
- * task in the plan and is not in the DOM yet. Each step's heading is unique
- * and already present, so it proves the same thing — a capture under
- * `register-medical-*.png` that actually shows step 1 would fail here rather
- * than shipping mislabelled.
+ * Not the compact "Step N of 4" progress bar (`RegisterStepProgress`): that
+ * widget is in the DOM now, but `md:hidden` keeps it out of the desktop-width
+ * captures in `WIDTHS`, so it can't serve as a signal common to all of them.
+ * Each step's heading is unique and present at every width, so it proves the
+ * same thing everywhere — a capture under `register-medical-*.png` that
+ * actually shows step 1 would fail here rather than shipping mislabelled.
  */
 const REGISTER_STEP_HEADINGS: Record<(typeof REGISTER_STEP_IDS)[number], RegExp> = {
   personal: /personal information/i,

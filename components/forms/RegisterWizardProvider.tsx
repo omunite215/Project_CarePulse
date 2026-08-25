@@ -71,9 +71,13 @@ export function useRegisterWizard(): RegisterWizardValue {
  *
  * The step indicator renders in the hero track and the fields render in the
  * content column — siblings in the shell's grid, with no prop path between
- * them. Hoisting `useForm` here and rendering react-hook-form's own
- * `FormProvider` (exported as `Form`) is what lets the indicator derive
- * per-step completeness from the same form state the fields write to.
+ * them. `RegisterStepIndicator` reads only `stepIndex` off this context, not
+ * form state — it does not derive per-step completeness from anything, so
+ * that is not what hoisting `useForm` buys. What it actually buys is a single
+ * form instance (and a single `step`) that the indicator, the fields in
+ * `RegisterForm`, and `FormErrorSummary` can all reach through
+ * `useRegisterWizard()` despite none of them being one another's parent or
+ * child.
  */
 export function RegisterWizardProvider({
   user,
@@ -153,6 +157,19 @@ export function RegisterWizardProvider({
       failedAttempts,
       recordFailedAttempt,
     }),
+    // This memo never actually blocks a recompute — `draft` is a fresh object
+    // literal on every call to `useFormDraft` (see its return statement), so
+    // `value` gets a new identity on every render of this provider regardless
+    // of whether any listed dependency changed. That is load-bearing, not an
+    // oversight: none of `RegisterForm`, `FormErrorSummary` or
+    // `RegisterReview` subscribe to react-hook-form's own context (e.g. via
+    // `useFormState`/`useWatch`), so this context value changing identity on
+    // every render is the *only* thing that re-renders them when form state
+    // changes — a value being typed, an error appearing, `failedAttempts`
+    // incrementing. Memoising `useFormDraft`'s return later, to "fix" this
+    // apparent redundancy, would silently stop those three from ever
+    // re-rendering on form state changes again — including
+    // `FormErrorSummary`, which would then stop appearing at all.
     [user, form, draft, step, setRawStep, failedAttempts, recordFailedAttempt],
   );
 
