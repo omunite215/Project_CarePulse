@@ -58,6 +58,9 @@
     //    inputs would not improve the semantics.
     //  - role="group" on the time-slot grid is correct; <fieldset> is the only
     //    suggested alternative and carries layout baggage.
+    //  - role="progressbar" on the mobile step progress (RegisterStepProgress)
+    //    is correct; native <progress> can only render one continuous fill,
+    //    not discrete per-step segments.
     "jsx-a11y/prefer-tag-over-role": "warn",
 
     // Autofocus is correct when focus must move INTO a just-opened dialog or

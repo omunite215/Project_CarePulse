@@ -31,7 +31,17 @@ export function RegisterStepIndicator() {
           const current = index === stepIndex;
 
           return (
-            <li key={step.id} className="flex items-start gap-3">
+            <li
+              key={step.id}
+              // aria-current is the standard mechanism for flagging the
+              // active item in an ordered set of steps — screen readers
+              // announce it natively, applying it only to the current <li>
+              // does not turn the list into a wall of per-item state, and
+              // unlike an sr-only text node it does not add an extra word to
+              // this item's accessible name.
+              aria-current={current ? "step" : undefined}
+              className="flex items-start gap-3"
+            >
               <span
                 aria-hidden="true"
                 className={cn(
@@ -42,7 +52,11 @@ export function RegisterStepIndicator() {
                   current && "ring-4 ring-green-500/20",
                 )}
               >
-                {done ? <CheckIcon className="size-3.5" /> : index + 1}
+                {done ? (
+                  <CheckIcon data-slot="step-done-icon" className="size-3.5" />
+                ) : (
+                  index + 1
+                )}
               </span>
 
               <span className="min-w-0">
@@ -54,9 +68,6 @@ export function RegisterStepIndicator() {
                 >
                   {step.title}
                 </span>
-                {/* The only status announced. Marking every step would make
-                    the accessible name of the list a wall of state. */}
-                {current ? <span className="sr-only">Current step</span> : null}
                 {step.hint ? (
                   <span className="text-12-regular block text-dark-600">
                     {step.hint}
@@ -94,7 +105,6 @@ export function RegisterStepProgress() {
           exception as ThemeToggle's `role="radio"` and DateField's
           `role="group"` in .oxlintrc.json. */}
       <div
-        // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
         role="progressbar"
         aria-valuenow={stepIndex + 1}
         aria-valuemin={1}

@@ -33,5 +33,16 @@ export default defineConfig({
     include: ["tests/**/*.test.{ts,tsx}", "lib/**/*.test.ts"],
     exclude: ["node_modules", ".next", "tests/e2e/**", "scripts/**"],
     restoreMocks: true,
+    /**
+     * Node's own experimental `localStorage` (Web Storage backed by SQLite,
+     * gated on `--localstorage-file`) registers itself as a global before
+     * jsdom gets a chance to install its own working `Storage` on `window`,
+     * so a jsdom test that touches `localStorage` (useFormDraft) gets an
+     * object whose methods are all `undefined`, and Node prints an unrelated
+     * warning about the missing `--localstorage-file` path on top of it.
+     * Turning the feature off in the worker processes lets jsdom's own
+     * `localStorage` — which works — through untouched.
+     */
+    execArgv: ["--no-experimental-webstorage"],
   },
 });
