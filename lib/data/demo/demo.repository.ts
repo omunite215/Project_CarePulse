@@ -1,5 +1,6 @@
 import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import { AppError } from "@/lib/errors";
+import { sleep } from "@/lib/utils";
 import type { DataRepository } from "../repository";
 import type {
   Appointment,
@@ -27,10 +28,32 @@ import { clone, getDemoStore, nextDemoId } from "./store";
 export class DemoRepository implements DataRepository {
   readonly kind = "demo" as const;
 
-  constructor(private readonly seed = 42) {}
+  constructor(
+    private readonly seed = 42,
+    private readonly latencyMs = 0,
+  ) {}
 
   private get store() {
     return getDemoStore(this.seed);
+  }
+
+  /**
+   * Demo-only read delay, so `loading.tsx` has time to paint.
+   *
+   * The `0` default on the constructor rather than a read of `DEMO_LATENCY_MS`
+   * here: the repository contract suite constructs this class directly and
+   * `pnpm test` never copies `.env` into `process.env`, so an env-reading
+   * default would either sleep through that whole suite or need env plumbing
+   * that exists nowhere else. `getRepository()` is the one caller that injects
+   * a real value.
+   *
+   * Reads only. The writes stay instant so booking and the admin actions do
+   * not feel sluggish, and so the slot re-check that closes the double-booking
+   * race is not slowed on the path that needs it least.
+   */
+  private async withLatency<T>(produce: () => T): Promise<T> {
+    if (this.latencyMs > 0) await sleep(this.latencyMs);
+    return produce();
   }
 
   /* ------------------------------- users ------------------------------- */
@@ -55,8 +78,10 @@ export class DemoRepository implements DataRepository {
   }
 
   async getUser(userId: string): Promise<User | null> {
-    const user = this.store.users.get(userId);
-    return user ? clone(user) : null;
+    return this.withLatency(() => {
+      const user = this.store.users.get(userId);
+      return user ? clone(user) : null;
+    });
   }
 
   /* ------------------------------ patients ----------------------------- */
@@ -88,10 +113,12 @@ export class DemoRepository implements DataRepository {
   }
 
   async getPatientByUserId(userId: string): Promise<Patient | null> {
-    const found = [...this.store.patients.values()].find(
-      (p) => p.userId === userId,
-    );
-    return found ? clone(found) : null;
+    return this.withLatency(() => {
+      const found = [...this.store.patients.values()].find(
+        (p) => p.userId === userId,
+      );
+      return found ? clone(found) : null;
+    });
   }
 
   /* ---------------------------- appointments --------------------------- */
@@ -120,8 +147,10 @@ export class DemoRepository implements DataRepository {
   }
 
   async getAppointment(appointmentId: string): Promise<Appointment | null> {
-    const found = this.store.appointments.get(appointmentId);
-    return found ? clone(found) : null;
+    return this.withLatency(() => {
+      const found = this.store.appointments.get(appointmentId);
+      return found ? clone(found) : null;
+    });
   }
 
   async updateAppointment(
@@ -143,46 +172,52 @@ export class DemoRepository implements DataRepository {
   async listAppointments(
     query: AppointmentQuery = {},
   ): Promise<AppointmentListResult> {
-    const all = [...this.store.appointments.values()];
+    return this.withLatency(() => {
+      const all = [...this.store.appointments.values()];
 
-    // Counts are always over the unfiltered set: the StatCards describe the
-    // clinic, not the current search.
-    const counts = countByStatus(all);
+      // Counts are always over the unfiltered set: the StatCards describe the
+      // clinic, not the current search.
+      const counts = countByStatus(all);
 
-    const filtered = all.filter((a) => matches(a, query));
-    const sorted = sortAppointments(filtered, query);
+      const filtered = all.filter((a) => matches(a, query));
+      const sorted = sortAppointments(filtered, query);
 
-    const page = Math.max(1, query.page ?? 1);
-    const pageSize = Math.min(
-      100,
-      Math.max(1, query.pageSize ?? APPOINTMENTS_PAGE_SIZE),
-    );
-    const start = (page - 1) * pageSize;
+      const page = Math.max(1, query.page ?? 1);
+      const pageSize = Math.min(
+        100,
+        Math.max(1, query.pageSize ?? APPOINTMENTS_PAGE_SIZE),
+      );
+      const start = (page - 1) * pageSize;
 
-    return {
-      documents: clone(sorted.slice(start, start + pageSize)),
-      totalCount: sorted.length,
-      counts,
-    };
+      return {
+        documents: clone(sorted.slice(start, start + pageSize)),
+        totalCount: sorted.length,
+        counts,
+      };
+    });
   }
 
   async listAppointmentsByUser(userId: string): Promise<Appointment[]> {
-    const mine = [...this.store.appointments.values()]
-      .filter((a) => a.userId === userId)
-      .toSorted((a, b) => b.schedule.localeCompare(a.schedule));
-    return clone(mine);
+    return this.withLatency(() => {
+      const mine = [...this.store.appointments.values()]
+        .filter((a) => a.userId === userId)
+        .toSorted((a, b) => b.schedule.localeCompare(a.schedule));
+      return clone(mine);
+    });
   }
 
   async getBookedSlots(physician: string, dayIso: string): Promise<string[]> {
-    const day = dayIso.slice(0, 10);
-    return [...this.store.appointments.values()]
-      .filter(
-        (a) =>
-          a.primaryPhysician === physician &&
-          a.status !== "cancelled" &&
-          a.schedule.slice(0, 10) === day,
-      )
-      .map((a) => a.schedule);
+    return this.withLatency(() => {
+      const day = dayIso.slice(0, 10);
+      return [...this.store.appointments.values()]
+        .filter(
+          (a) =>
+            a.primaryPhysician === physician &&
+            a.status !== "cancelled" &&
+            a.schedule.slice(0, 10) === day,
+        )
+        .map((a) => a.schedule);
+    });
   }
 
   /* ------------------------------- storage ----------------------------- */

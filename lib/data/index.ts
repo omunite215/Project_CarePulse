@@ -33,7 +33,7 @@ export async function getRepository(): Promise<DataRepository> {
     );
     g[REPO_KEY] = new AppwriteRepository();
   } else {
-    g[REPO_KEY] = new DemoRepository(env.DEMO_SEED);
+    g[REPO_KEY] = new DemoRepository(env.DEMO_SEED, env.DEMO_LATENCY_MS);
   }
 
   return g[REPO_KEY]!;

@@ -6,6 +6,10 @@ import "@testing-library/jest-dom/vitest";
  */
 process.env.DEMO_MODE = "true";
 process.env.DEMO_SEED = "42";
+// Belt and braces. No unit test goes through `getRepository()` today, so the
+// `latencyMs = 0` constructor default already covers this — but the day one
+// does, it should not silently start sleeping 600ms per read.
+process.env.DEMO_LATENCY_MS = "0";
 process.env.ADMIN_PASSKEY ??= "123456";
 process.env.ADMIN_SESSION_SECRET ??=
   "test-only-session-secret-that-is-long-enough";

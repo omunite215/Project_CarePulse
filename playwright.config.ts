@@ -71,6 +71,11 @@ export default defineConfig({
       // Force fixtures with a fixed seed, whatever is in .env.local.
       DEMO_MODE: "true",
       DEMO_SEED: "42",
+      // Pinned, not inherited. The default is 600ms, and a slow server would
+      // let `pnpm shots` capture a half-drawn page into the committed README
+      // images — where the only thing that would catch it is someone noticing.
+      // The e2e and responsive projects share this server and want it fast too.
+      DEMO_LATENCY_MS: "0",
       ADMIN_PASSKEY: "123456",
       ADMIN_SESSION_SECRET: "playwright-only-session-secret-not-for-production",
       TZ: "America/New_York",

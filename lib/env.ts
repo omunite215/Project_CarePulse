@@ -51,6 +51,17 @@ const BaseEnvSchema = z.object({
   /** Deterministic fixture seed. Fixed so screenshots and E2E runs match. */
   DEMO_SEED: z.coerce.number().int().default(42),
 
+  /**
+   * Simulated read latency for demo mode, in milliseconds.
+   *
+   * On by default. Fixtures resolve in ~0ms, so without this every route's
+   * `loading.tsx` is unreachable — and a skeleton nobody can see is a skeleton
+   * nobody maintains, which is exactly how the admin one drifted two rows and
+   * 51px per row out of step with the table. Ignored entirely when the app
+   * runs against Appwrite, which has real latency of its own.
+   */
+  DEMO_LATENCY_MS: z.coerce.number().int().min(0).default(600),
+
   /** Forces demo mode even when Appwrite credentials are present. */
   DEMO_MODE: z
     .enum(["true", "false"])

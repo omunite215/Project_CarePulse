@@ -169,7 +169,7 @@ Set the Appwrite variables all together or not at all — a partial configuratio
 
 **As staff** — click **Admin** in the footer, or go to `/?admin=true`. The demo passkey is `123456`. The dashboard shows counts and the full appointment table; filter it, export the page as CSV, and use **Schedule** or **Cancel** on any row. Both text the patient, and the toast tells you whether the message actually sent.
 
-In demo mode the data lives in memory and resets when the server restarts. SMS is written to an in-memory outbox rather than sent.
+In demo mode the data lives in memory and resets when the server restarts. SMS is written to an in-memory outbox rather than sent. Reads are delayed by `DEMO_LATENCY_MS` (600ms by default) so the loading skeletons are visible rather than theoretical — set `DEMO_LATENCY_MS=0` for an instant demo. Writes are never delayed.
 
 **Scripts**
 
