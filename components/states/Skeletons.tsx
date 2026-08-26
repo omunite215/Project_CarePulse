@@ -207,6 +207,15 @@ export function DataTableSkeleton({
   return (
     <Busy label="Loading appointments">
       <div className="data-table">
+        {/* The strip above the rows is two different controls: a sort select
+            below `md`, where there is no header row to click, and the header
+            row itself from `md` up. Both are mirrored here, because a skeleton
+            missing either one hands the content a step to jump when it lands —
+            and the row parity test only measures rows. `h-11` is what
+            `shad-select-trigger` forces; `h-12` is TableHead's own height. */}
+        <div className="border-b border-border p-4 md:hidden">
+          <Skeleton className="h-11 w-full" />
+        </div>
         <Skeleton className="hidden h-12 w-full rounded-none md:block" />
         <div className="divide-y divide-border">
           {Array.from({ length: rows }, (_, i) => (

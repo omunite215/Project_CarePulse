@@ -13,6 +13,13 @@ import {
 import { EmptyState } from "@/components/states/EmptyState";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,7 +31,14 @@ import type { Appointment } from "@/lib/data/types";
 import { AppointmentRowCard } from "./AppointmentRowCard";
 import { columns } from "./columns";
 import { tableFeatures } from "./features";
-import { ariaSortFor, nextSortState, type SortState } from "./sorting";
+import {
+  ariaSortFor,
+  decodeSort,
+  encodeSort,
+  nextSortState,
+  SORT_OPTIONS,
+  type SortState,
+} from "./sorting";
 
 interface DataTableProps {
   data: Appointment[];
@@ -121,6 +135,33 @@ export function DataTable({
             has that role implicitly, and the lint config (jsx-a11y/no-
             redundant-roles) treats restating it as a defect, not a safety
             net. */}
+        {/* Below `md` there is no header row to click, so the same three keys
+            are offered flat — one tap on a phone rather than a select plus a
+            separate direction toggle. Deliberately here rather than in
+            AppointmentFilters: that grid's `lg:col-auto` on the date pair is
+            load-bearing, and Export wraps to a stretched second row when the
+            arrangement is disturbed. */}
+        <div className="border-b border-border p-4 md:hidden">
+          <Select
+            value={encodeSort(sortState)}
+            onValueChange={(value) => onSortChange(decodeSort(value))}
+          >
+            <SelectTrigger
+              className="shad-select-trigger"
+              aria-label="Sort appointments"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="shad-select-content">
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <ul className="divide-y divide-border md:hidden">
           {table.getRowModel().rows.map((row) => (
             <AppointmentRowCard key={row.id} appointment={row.original} />

@@ -115,6 +115,34 @@ test("sorting returns to the first page", async ({ page }) => {
   await expect(page.getByText(/Showing 1–/)).toBeVisible();
 });
 
+test("a phone can sort without a header to click", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await signIn(page);
+
+  // Below `md` a card list replaces the table, so there is no header row to
+  // click. Both renderers are in the DOM at every width — the wrong one is
+  // `display: none` — so this asserts on visibility, not on existence.
+  await expect(page.locator("tbody > tr").first()).toBeHidden();
+
+  const sort = page.getByLabel("Sort appointments");
+  await expect(sort).toHaveCount(1);
+  await sort.click();
+  await page.getByRole("option", { name: /^Patient A/ }).click();
+
+  await expect(page).toHaveURL(/sort=patient/);
+  await expect(page).toHaveURL(/direction=asc/);
+
+  const names = page.locator(".data-table ul > li p:first-child");
+  await expect(names.first()).toBeVisible();
+  await expect
+    .poll(async () =>
+      isSortedAscending(
+        (await names.allTextContents()).map((text) => text.trim()),
+      ),
+    )
+    .toBe(true);
+});
+
 test("an unsortable column offers no control", async ({ page }) => {
   await signIn(page);
 
