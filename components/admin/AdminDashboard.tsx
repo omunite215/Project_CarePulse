@@ -7,6 +7,7 @@ import { StatCard } from "@/components/StatCard";
 import { DataTable } from "@/components/table/DataTable";
 import { ErrorState } from "@/components/states/ErrorState";
 import { DataTableSkeleton } from "@/components/states/Skeletons";
+import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import { appointmentsToCsv, downloadCsv } from "@/lib/csv";
 import { appointmentListOptions } from "@/lib/query/appointments";
 import { AppointmentFilters } from "./AppointmentFilters";
@@ -98,7 +99,7 @@ export function AdminDashboard() {
         data={data.documents}
         totalCount={data.totalCount}
         page={controller.filters.page}
-        pageSize={10}
+        pageSize={APPOINTMENTS_PAGE_SIZE}
         onPageChange={controller.setPage}
         isFetching={isFetching}
         isFiltered={controller.isFiltered}
