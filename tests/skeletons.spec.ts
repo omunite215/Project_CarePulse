@@ -106,3 +106,65 @@ for (const layout of LAYOUTS) {
     ).toBeLessThanOrEqual(TOLERANCE_PX);
   });
 }
+
+/**
+ * The strip above the rows, which the row assertions above cannot see.
+ *
+ * It is two different controls: a sort select below `md`, where there is no
+ * header row to click, and the header row itself from `md` up. Both are
+ * mirrored by hand in `Skeletons.tsx`, so both can drift the way the row height
+ * did — silently, and visible only as a jump when the content lands.
+ *
+ * The desktop half also pins a constraint the sort feature introduced: the
+ * header button carries no height of its own, because `TableHead` is a fixed
+ * `h-12` that the skeleton hardcodes. A control that grew the header would
+ * break this and nothing else.
+ */
+const STRIPS = [
+  {
+    width: 390,
+    label: "sort bar",
+    skeleton: '[data-slot="skeleton-sort-bar"]',
+    real: '[data-slot="table-sort-bar"]',
+  },
+  {
+    width: 1280,
+    label: "header row",
+    skeleton: '[data-slot="skeleton-header-bar"]',
+    real: ".data-table thead > tr",
+  },
+] as const;
+
+for (const strip of STRIPS) {
+  test(`the skeleton's ${strip.label} matches the real one at ${strip.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: strip.width, height: 900 });
+    await signIn(page);
+
+    await page.goto("/admin", { waitUntil: "commit" });
+
+    // `filter({ visible: true })` rather than `.first()`: both strips are in
+    // the DOM at both widths — the wrong one is `display: none` — and during
+    // streaming React briefly holds a second, hidden copy of the whole subtree
+    // whose boxes all measure 0x0. Measuring that copy silently returns
+    // garbage, so the visible one is selected rather than the first one.
+    const skeletonStrip = page
+      .locator(strip.skeleton)
+      .filter({ visible: true });
+    await expect(skeletonStrip).toHaveCount(1);
+    const skeleton = await boxOf(skeletonStrip, "skeleton strip");
+
+    // Content has replaced the fallback.
+    await expect(page.locator('[data-slot="skeleton-row"]')).toHaveCount(0);
+
+    const realStrip = page.locator(strip.real).filter({ visible: true });
+    await expect(realStrip).toHaveCount(1);
+    const real = await boxOf(realStrip, "real strip");
+
+    expect(
+      Math.abs(real.height - skeleton.height),
+      `${strip.label} height drifted: skeleton ${skeleton.height}px vs real ${real.height}px`,
+    ).toBeLessThanOrEqual(TOLERANCE_PX);
+  });
+}

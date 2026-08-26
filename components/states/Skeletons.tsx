@@ -213,10 +213,16 @@ export function DataTableSkeleton({
             missing either one hands the content a step to jump when it lands —
             and the row parity test only measures rows. `h-11` is what
             `shad-select-trigger` forces; `h-12` is TableHead's own height. */}
-        <div className="border-b border-border p-4 md:hidden">
+        <div
+          data-slot="skeleton-sort-bar"
+          className="border-b border-border p-4 md:hidden"
+        >
           <Skeleton className="h-11 w-full" />
         </div>
-        <Skeleton className="hidden h-12 w-full rounded-none md:block" />
+        <Skeleton
+          data-slot="skeleton-header-bar"
+          className="hidden h-12 w-full rounded-none md:block"
+        />
         <div className="divide-y divide-border">
           {Array.from({ length: rows }, (_, i) => (
             // `data-slot`, the convention this file's own `Skeleton` primitive

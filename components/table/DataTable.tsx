@@ -141,7 +141,10 @@ export function DataTable({
             AppointmentFilters: that grid's `lg:col-auto` on the date pair is
             load-bearing, and Export wraps to a stretched second row when the
             arrangement is disturbed. */}
-        <div className="border-b border-border p-4 md:hidden">
+        <div
+          data-slot="table-sort-bar"
+          className="border-b border-border p-4 md:hidden"
+        >
           <Select
             value={encodeSort(sortState)}
             onValueChange={(value) => onSortChange(decodeSort(value))}
