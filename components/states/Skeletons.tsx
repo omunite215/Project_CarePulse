@@ -210,23 +210,68 @@ export function DataTableSkeleton({
             // without depending on the class names that describe its layout.
             <div key={i} data-slot="skeleton-row" className="p-4">
               {/* Card shape below md, row shape from md up — the skeleton has
-                  to switch with the content or it reintroduces the shift. */}
-              <div className="space-y-2 md:hidden">
-                <Skeleton className="h-4 w-36" />
-                <Skeleton className="h-3 w-48" />
-                <Skeleton className="h-7 w-28 rounded-full" />
-                <Skeleton className="h-8 w-full" />
+                  to switch with the content or it reintroduces the shift.
+                  Both branches mirror their real counterpart element for
+                  element (AppointmentRowCard and columns.tsx respectively),
+                  because every height below is a consequence of that structure
+                  rather than a number anyone chose. */}
+              <div className="md:hidden">
+                {/* Name over email, status pill alongside. */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="mt-0.5 h-3 w-48" />
+                  </div>
+                  <Skeleton className="h-7 w-28 shrink-0 rounded-full" />
+                </div>
+
+                {/* The card's three-row <dl>: When, Doctor, Reason. The doctor
+                    row is the tall one — it carries a size-6 avatar. */}
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-4 w-10" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="size-6 rounded-full" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-4 w-14" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+
+                {/* Schedule and Cancel. `h-9` is Button's own `size="sm"`. */}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Skeleton className="h-9" />
+                  <Skeleton className="h-9" />
+                </div>
               </div>
+
+              {/* Column order and breakpoints follow columns.tsx exactly:
+                  index at lg, Patient always, Status always, Appointment at
+                  md, Doctor at lg, Reason at xl, Actions always. */}
               <div className="hidden items-center gap-4 md:flex">
                 <Skeleton className="hidden h-4 w-6 lg:block" />
-                <Skeleton className="h-4 w-36" />
+                {/* Two bars, not one: the real cell stacks a 14px name over a
+                    12px email, and a single bar is the whole desktop delta. */}
+                <div className="min-w-36">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="mt-0.5 h-3 w-40" />
+                </div>
                 <Skeleton className="h-7 w-28 rounded-full" />
-                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-32" />
                 <div className="hidden items-center gap-3 lg:flex">
                   <Skeleton className="size-8 rounded-full" />
                   <Skeleton className="h-4 w-28" />
                 </div>
-                <Skeleton className="ml-auto h-8 w-40" />
+                {/* Reason is PRIORITY.xl in columns.tsx and had no placeholder
+                    at all — a fidelity gap rather than a height one, since
+                    this branch is a flex row. */}
+                <Skeleton className="hidden h-4 w-40 xl:block" />
+                <Skeleton className="ml-auto h-9 w-40" />
               </div>
             </div>
           ))}
