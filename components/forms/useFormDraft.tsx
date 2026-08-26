@@ -146,9 +146,14 @@ export function useFormDraft<T extends FieldValues>(
   }, [form, storageKey]);
 
   const discard = useCallback(() => {
-    clear();
     setRestored(false);
+    // `clear()` runs *after* `reset()`, not before. `reset()` notifies the
+    // watch subscriber below, which schedules a fresh 800ms write — so
+    // clearing first left that write to land on an empty key and bring the
+    // notice straight back as "Draft saved locally", now holding the default
+    // values. Clearing last cancels the timer the reset just scheduled.
     form.reset();
+    clear();
   }, [clear, form]);
 
   return { saved, restored, clear, discard };

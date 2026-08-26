@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
+import { useForm } from "react-hook-form";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useFormDraft } from "@/components/forms/useFormDraft";
@@ -117,6 +118,74 @@ describe("draft.clear() cancels a pending debounced save (M-1)", () => {
       act(() => vi.advanceTimersByTime(1000));
 
       expect(setItemSpy).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+/**
+ * Driven by a real `useForm`, not `createFakeForm`.
+ *
+ * The stand-in above has `reset` as a bare `vi.fn()` that never notifies the
+ * `watch` subscriber, and this bug is precisely that real RHF's `reset()`
+ * *does* notify it — so a mock faithful enough to catch this would be a mock
+ * asserting the thing under test.
+ */
+function renderRealDraft() {
+  return renderHook(() => {
+    const form = useForm({ defaultValues: { name: "", email: "" } });
+    return { form, draft: useFormDraft(form, "discard-test") };
+  });
+}
+
+describe("draft.discard() does not resurrect the draft it just cleared", () => {
+  const KEY = "carepulse:draft:discard-test";
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("leaves storage empty and the notice hidden after the debounce elapses", () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderRealDraft();
+
+      // Type something and let the 800ms debounce land, so there is a real
+      // draft to discard and the notice is on screen.
+      act(() => result.current.form.setValue("name", "Jane"));
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(window.localStorage.getItem(KEY)).not.toBeNull();
+      expect(result.current.draft.saved).toBe(true);
+
+      // Discard, then let any timer that `reset()` scheduled run out.
+      act(() => result.current.draft.discard());
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(window.localStorage.getItem(KEY)).toBeNull();
+      expect(result.current.draft.saved).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still saves normally when the user types again after discarding", () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderRealDraft();
+
+      act(() => result.current.draft.discard());
+      act(() => vi.advanceTimersByTime(1000));
+      expect(window.localStorage.getItem(KEY)).toBeNull();
+
+      // Discard must suppress the reset's own write, not permanently disable
+      // saving for the rest of the session.
+      act(() => result.current.form.setValue("name", "Ada"));
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(window.localStorage.getItem(KEY)).not.toBeNull();
+      expect(result.current.draft.saved).toBe(true);
     } finally {
       vi.useRealTimers();
     }
