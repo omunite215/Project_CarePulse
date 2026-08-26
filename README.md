@@ -102,7 +102,7 @@ The diagram source is committed at [`docs/architecture.drawio`](docs/architectur
 - Loading, error, empty and offline states on every route — skeletons match the real layout, so nothing shifts
 - Server-validated forms; field-level errors map back onto the offending input and move focus there
 - WCAG AA contrast, visible focus rings, a skip link, and `prefers-reduced-motion` respected throughout
-- 139 unit tests and 36 end-to-end browser tests, plus a reproducible 20-shot screenshot suite
+- 156 unit tests and 36 end-to-end browser tests, plus a reproducible 20-shot screenshot suite
 
 <details>
 <summary>More screenshots</summary>
@@ -183,6 +183,8 @@ pnpm test        # Vitest unit + repository contract tests
 pnpm e2e         # Playwright end-to-end suite
 pnpm check       # lint + typecheck + test
 ```
+
+`pnpm e2e:skeletons` runs the loading-state parity checks against a second, deliberately slow server, so it is kept out of `pnpm e2e`.
 
 **Regenerating assets**
 
