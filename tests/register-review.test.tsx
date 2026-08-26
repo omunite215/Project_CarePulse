@@ -77,6 +77,37 @@ function identificationSection(): HTMLElement {
   return section;
 }
 
+/**
+ * A patient who pressed the spacebar in a free-text answer and moved on.
+ *
+ * The summary reads `form.getValues()`, which is raw form state — react-hook-
+ * form does not hand back the resolver's parsed output — so trimming in the
+ * Zod schema alone cannot change what this renders.
+ */
+function WhitespaceOnlyAllergies() {
+  const { form } = useRegisterWizard();
+  form.setValue("allergies", "   ");
+  return <RegisterReview />;
+}
+
+function renderWhitespaceOnlyAllergies() {
+  return render(
+    <NuqsTestingAdapter searchParams="?step=review">
+      <RegisterWizardProvider user={user}>
+        <WhitespaceOnlyAllergies />
+      </RegisterWizardProvider>
+    </NuqsTestingAdapter>,
+  );
+}
+
+/** The `<div>` holding one summary row's `<dt>` label and `<dd>` value. */
+function summaryRow(label: string): HTMLElement {
+  const term = screen.getByText(label);
+  const row = term.closest("div");
+  if (!row) throw new Error(`Summary row for "${label}" not found`);
+  return row;
+}
+
 describe("RegisterReview", () => {
   it("has a LABELS entry for every non-consent schema field", () => {
     // Derived from the schema, not hardcoded, so a field added later fails
@@ -106,6 +137,14 @@ describe("RegisterReview", () => {
 
     expect(scoped.getByText("Scanned document")).toBeInTheDocument();
     expect(scoped.getByText("Not provided")).toBeInTheDocument();
+  });
+
+  it("reads a whitespace-only answer as 'Not provided', not an empty cell", () => {
+    renderWhitespaceOnlyAllergies();
+
+    const row = within(summaryRow("Allergies"));
+
+    expect(row.getByText("Not provided")).toBeInTheDocument();
   });
 
   it("shows the explanatory sentence, not rows, when identification is fully skipped", () => {

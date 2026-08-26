@@ -60,27 +60,28 @@ describe("UserFormValidation", () => {
   });
 });
 
-describe("PatientFormValidation consent", () => {
-  const valid = {
-    ...PatientFormDefaultValues,
-    name: "Jane Cooper",
-    email: "jane@example.com",
-    phone: "+12025550143",
-    // Stated explicitly: the defaults deliberately no longer supply these.
-    birthDate: new Date("1991-04-18"),
-    gender: "female" as const,
-    address: "418 Maple Street",
-    occupation: "Engineer",
-    emergencyContactName: "Michael Cooper",
-    emergencyContactNumber: "+12025550144",
-    primaryPhysician: "John Green",
-    insuranceProvider: "Blue Shield",
-    insurancePolicyNumber: "POL-123456",
-    treatmentConsent: true,
-    disclosureConsent: true,
-    privacyConsent: true,
-  };
+/** A complete, valid registration payload, shared by the suites below. */
+const valid = {
+  ...PatientFormDefaultValues,
+  name: "Jane Cooper",
+  email: "jane@example.com",
+  phone: "+12025550143",
+  // Stated explicitly: the defaults deliberately no longer supply these.
+  birthDate: new Date("1991-04-18"),
+  gender: "female" as const,
+  address: "418 Maple Street",
+  occupation: "Engineer",
+  emergencyContactName: "Michael Cooper",
+  emergencyContactNumber: "+12025550144",
+  primaryPhysician: "John Green",
+  insuranceProvider: "Blue Shield",
+  insurancePolicyNumber: "POL-123456",
+  treatmentConsent: true,
+  disclosureConsent: true,
+  privacyConsent: true,
+};
 
+describe("PatientFormValidation consent", () => {
   it("accepts a fully consented form", () => {
     const result = PatientFormValidation.safeParse(valid);
     expect(result.success).toBe(true);
@@ -196,5 +197,40 @@ describe("appointment schemas", () => {
     expect(getAppointmentSchema("schedule")).toBe(
       getAppointmentSchema("schedule"),
     );
+  });
+});
+
+describe("PatientFormValidation optional free-text fields", () => {
+  /**
+   * The five optional fields a patient can leave blank. Every other string
+   * field already trims; these did not, so a spacebar press submitted a value
+   * that was non-empty to the schema and invisible to a human.
+   */
+  const OPTIONAL_TEXT = [
+    "allergies",
+    "currentMedication",
+    "familyMedicalHistory",
+    "pastMedicalHistory",
+    "identificationNumber",
+  ] as const;
+
+  it.each(OPTIONAL_TEXT)("normalises a whitespace-only %s to empty", (field) => {
+    const result = PatientFormValidation.safeParse({
+      ...valid,
+      [field]: "   ",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data?.[field]).toBe("");
+  });
+
+  it.each(OPTIONAL_TEXT)("still preserves a real %s answer", (field) => {
+    const result = PatientFormValidation.safeParse({
+      ...valid,
+      [field]: "  Penicillin  ",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data?.[field]).toBe("Penicillin");
   });
 });

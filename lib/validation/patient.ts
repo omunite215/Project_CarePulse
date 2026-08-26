@@ -58,14 +58,16 @@ export const PatientFormValidation = z.object({
     .trim()
     .min(2, { error: "Policy number must be at least 2 characters" })
     .max(50, { error: "Policy number must be at most 50 characters" }),
-  allergies: z.string().max(500).optional(),
-  currentMedication: z.string().max(500).optional(),
-  familyMedicalHistory: z.string().max(500).optional(),
-  pastMedicalHistory: z.string().max(500).optional(),
+  // Trimmed like every other string field: without it a lone spacebar press
+  // submits a value the schema counts as answered and a human cannot see.
+  allergies: z.string().trim().max(500).optional(),
+  currentMedication: z.string().trim().max(500).optional(),
+  familyMedicalHistory: z.string().trim().max(500).optional(),
+  pastMedicalHistory: z.string().trim().max(500).optional(),
 
   // Identification
   identificationType: z.string().optional(),
-  identificationNumber: z.string().max(50).optional(),
+  identificationNumber: z.string().trim().max(50).optional(),
   identificationDocument: z.custom<File[]>().optional(),
 
   // Consent

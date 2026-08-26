@@ -33,7 +33,12 @@ export const LABELS: Partial<Record<keyof PatientFormValues, string>> = {
 };
 
 function display(name: keyof PatientFormValues, value: unknown): string | null {
-  if (value === undefined || value === null || value === "") return null;
+  if (value === undefined || value === null) return null;
+  // Whitespace-only counts as unanswered. The schema trims on submit, but this
+  // reads `form.getValues()` — raw form state, not the resolver's output — so
+  // without this check a spacebar answer renders as an invisible blank cell
+  // while the value actually submitted is empty.
+  if (typeof value === "string" && value.trim() === "") return null;
   if (name === "birthDate" && value instanceof Date) {
     return formatDateTime(value).dateOnly;
   }
