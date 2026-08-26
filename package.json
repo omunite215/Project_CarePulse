@@ -22,6 +22,7 @@
     "e2e": "playwright test --project=e2e",
     "shots": "playwright test --project=shots",
     "shots:responsive": "playwright test --project=responsive",
+    "e2e:skeletons": "playwright test --project=skeletons",
     "diagram": "node scripts/diagram.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
