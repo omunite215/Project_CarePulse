@@ -18,8 +18,13 @@ function Busy({
   label: string;
   children: React.ReactNode;
 }) {
+  // `w-full` so the wrapper stays layout-transparent. `admin-main` is
+  // `flex flex-col items-center`, where a child with no width shrink-to-fits —
+  // which collapsed StatCardsSkeleton to the width of its own grid gaps and
+  // sized DataTableSkeleton to the sum of its placeholder bars instead of to
+  // the table. A no-op in ordinary block flow, where this is already 100%.
   return (
-    <div aria-busy="true" aria-live="polite">
+    <div aria-busy="true" aria-live="polite" className="w-full">
       <span className="sr-only">{label}</span>
       {children}
     </div>

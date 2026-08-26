@@ -35,10 +35,13 @@ async function signIn(page: Page) {
   await expect(page).toHaveURL(/\/admin$/, { timeout: 30_000 });
 }
 
-async function heightOf(locator: Locator, label: string): Promise<number> {
+async function boxOf(
+  locator: Locator,
+  label: string,
+): Promise<{ width: number; height: number }> {
   const box = await locator.boundingBox();
   expect(box, `${label} must be laid out to be measured`).not.toBeNull();
-  return box!.height;
+  return { width: box!.width, height: box!.height };
 }
 
 for (const layout of LAYOUTS) {
@@ -57,10 +60,7 @@ for (const layout of LAYOUTS) {
     await expect(skeletonRows.first()).toBeVisible();
 
     const skeletonCount = await skeletonRows.count();
-    const skeletonRowHeight = await heightOf(
-      skeletonRows.first(),
-      "skeleton row",
-    );
+    const skeletonRow = await boxOf(skeletonRows.first(), "skeleton row");
 
     // Content has replaced the fallback.
     await expect(skeletonRows).toHaveCount(0);
@@ -88,11 +88,21 @@ for (const layout of LAYOUTS) {
       "no actionable row on page 1 to measure against",
     ).toBeGreaterThan(0);
 
-    const realRowHeight = await heightOf(actionableRows.first(), "table row");
+    const realRow = await boxOf(actionableRows.first(), "table row");
 
     expect(
-      Math.abs(realRowHeight - skeletonRowHeight),
-      `row height drifted: skeleton ${skeletonRowHeight}px vs real ${realRowHeight}px`,
+      Math.abs(realRow.height - skeletonRow.height),
+      `row height drifted: skeleton ${skeletonRow.height}px vs real ${realRow.height}px`,
+    ).toBeLessThanOrEqual(TOLERANCE_PX);
+
+    // Width too, because a skeleton can be the right height and still be the
+    // wrong shape. `admin-main` is `flex flex-col items-center`, so anything
+    // in it without an explicit width shrink-to-fits — which silently sized
+    // this skeleton to the sum of its own placeholder bars rather than to the
+    // table it stands in for.
+    expect(
+      Math.abs(realRow.width - skeletonRow.width),
+      `row width drifted: skeleton ${skeletonRow.width}px vs real ${realRow.width}px`,
     ).toBeLessThanOrEqual(TOLERANCE_PX);
   });
 }
