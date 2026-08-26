@@ -60,6 +60,10 @@ describe("UserFormValidation", () => {
   });
 });
 
+const physicianMessage = (
+  issues: { path: PropertyKey[]; message: string }[] | undefined,
+) => issues?.find((issue) => issue.path[0] === "primaryPhysician")?.message;
+
 /** A complete, valid registration payload, shared by the suites below. */
 const valid = {
   ...PatientFormDefaultValues,
@@ -197,6 +201,30 @@ describe("appointment schemas", () => {
     expect(getAppointmentSchema("schedule")).toBe(
       getAppointmentSchema("schedule"),
     );
+  });
+
+  /**
+   * Asserted as an invariant between the two schemas, not as two independent
+   * string pins: the wizard's copy pass revised `patient.ts` and never reached
+   * `appointment.ts`, so the same field asked for a doctor in two different
+   * voices. Comparing them means the next revision to either one fails here
+   * rather than silently re-opening the gap.
+   */
+  it("asks for a doctor in the same words as the registration schema", () => {
+    const fromAppointment = physicianMessage(
+      CreateAppointmentSchema.safeParse({
+        ...base,
+        primaryPhysician: "",
+        reason: "Check-up",
+      }).error?.issues,
+    );
+    const fromRegistration = physicianMessage(
+      PatientFormValidation.safeParse({ ...valid, primaryPhysician: "" }).error
+        ?.issues,
+    );
+
+    expect(fromRegistration).toBe("Choose the doctor you would like to see");
+    expect(fromAppointment).toBe(fromRegistration);
   });
 });
 

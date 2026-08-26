@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-const physician = z.string().min(2, { error: "Select a doctor" });
+// Same wording as the registration schema. The wizard's copy pass settled on
+// saying what to do rather than what went wrong, and this form asks for the
+// same thing — it was simply outside that pass's scope.
+const physician = z
+  .string()
+  .min(2, { error: "Choose the doctor you would like to see" });
 
 /**
  * `z.date()`, not `z.coerce.date()`.
