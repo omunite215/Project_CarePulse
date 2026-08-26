@@ -243,14 +243,22 @@ test.describe("admin", () => {
       // table-or-card-list split at `md`) has actually painted, not just the
       // static server-rendered chrome around it.
       //
-      // Counted before it is asserted visible. While the page hydrates this
-      // label briefly matches two inputs, and `toBeVisible()` on a locator
-      // matching two elements throws a strict mode violation immediately
-      // rather than waiting — which is what made this test fail roughly one
-      // run in twenty, at whichever widths happened to land in that window.
-      // `toHaveCount(1)` polls until the duplicate has resolved, so it holds
-      // the invariant (the dashboard has exactly one search box) instead of
-      // stepping around it the way `.first()` would.
+      // Counted before it is asserted visible.
+      //
+      // React streams the suspended dashboard into an out-of-order placeholder
+      // (`<div id="S:1">`) and an inline script then relocates it into the real
+      // slot. For roughly 50ms both copies are in the DOM, so this label
+      // matches two inputs — and `getByLabel` matches hidden elements, while
+      // only `toBeVisible()` filters on visibility. `toBeVisible()` on a
+      // two-element locator throws a strict mode violation immediately rather
+      // than waiting, so the wait could not ride out the window it existed to
+      // wait for. That is what failed this test in roughly 6% of runs, at
+      // whichever widths happened to land inside it.
+      //
+      // `toHaveCount(1)` polls until the placeholder copy is gone, holding the
+      // invariant that the dashboard has exactly one search box. `.first()` is
+      // not a safe substitute: it takes whichever copy comes first in DOM
+      // order, which is not guaranteed to be the visible one.
       const search = page.getByLabel("Search appointments");
       await expect(search).toHaveCount(1);
       await expect(search).toBeVisible();
