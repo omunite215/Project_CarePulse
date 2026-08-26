@@ -8,6 +8,7 @@ import {
   useQueryStates,
 } from "nuqs";
 
+import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import { APPOINTMENT_STATUSES } from "@/lib/data/types";
 
 const STATUS_OPTIONS = [...APPOINTMENT_STATUSES, "all"] as const;
@@ -61,7 +62,7 @@ export function useAppointmentFilters() {
       from: filters.from?.toISOString(),
       to: filters.to?.toISOString(),
       page: filters.page,
-      pageSize: 10,
+      pageSize: APPOINTMENTS_PAGE_SIZE,
     }),
   };
 }

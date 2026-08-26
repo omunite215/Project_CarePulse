@@ -81,6 +81,21 @@ export const MIN_BOOKING_LEAD_MINUTES = 60;
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+/* -------------------------------------------------------------------------- */
+/*                              Admin pagination                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Rows per page in the admin table.
+ *
+ * Lives here, not in `lib/env.ts`, because both the client (`lib/query/keys.ts`,
+ * `useAppointmentFilters`) and the server read it, and `lib/env.ts` is
+ * `server-only`. One number, because it was six: five call sites defaulting to
+ * `10` and a loading skeleton hardcoding `8`, which is how the skeleton came to
+ * be two rows short of the table it stands in for.
+ */
+export const APPOINTMENTS_PAGE_SIZE = 10;
+
 export const ACCEPTED_UPLOAD_TYPES = {
   "image/png": [".png"],
   "image/jpeg": [".jpg", ".jpeg"],

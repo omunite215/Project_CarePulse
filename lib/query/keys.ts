@@ -1,3 +1,4 @@
+import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import type { AppointmentQuery } from "@/lib/data/types";
 
 /**
@@ -33,7 +34,7 @@ function normalise(query: AppointmentQuery) {
     from: query.from || undefined,
     to: query.to || undefined,
     page: query.page ?? 1,
-    pageSize: query.pageSize ?? 10,
+    pageSize: query.pageSize ?? APPOINTMENTS_PAGE_SIZE,
     sort: query.sort ?? "createdAt",
     direction: query.direction ?? "desc",
   };

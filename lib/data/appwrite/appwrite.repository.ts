@@ -3,6 +3,7 @@ import "server-only";
 import { ID, Query } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
 
+import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import { AppError } from "@/lib/errors";
 import type { DataRepository } from "../repository";
 import type {
@@ -276,7 +277,10 @@ export class AppwriteRepository implements DataRepository {
   ): Promise<AppointmentListResult> {
     const { databases, ids } = getAppwrite();
     const page = Math.max(1, query.page ?? 1);
-    const pageSize = Math.min(100, Math.max(1, query.pageSize ?? 10));
+    const pageSize = Math.min(
+      100,
+      Math.max(1, query.pageSize ?? APPOINTMENTS_PAGE_SIZE),
+    );
 
     try {
       const queries: string[] = [WITH_PATIENT];

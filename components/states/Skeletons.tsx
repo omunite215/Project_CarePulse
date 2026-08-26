@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import { REGISTER_STEPS } from "@/lib/forms/register-steps";
 
 /**
@@ -188,14 +189,26 @@ export function StatCardsSkeleton() {
   );
 }
 
-export function DataTableSkeleton({ rows = 8 }: { rows?: number }) {
+/**
+ * `rows` defaults to the real page size rather than a number someone picked:
+ * a skeleton promising eight rows against a table that delivers ten shifted
+ * the page by two rows every load, and no test could see it.
+ */
+export function DataTableSkeleton({
+  rows = APPOINTMENTS_PAGE_SIZE,
+}: {
+  rows?: number;
+}) {
   return (
     <Busy label="Loading appointments">
       <div className="data-table">
         <Skeleton className="hidden h-12 w-full rounded-none md:block" />
         <div className="divide-y divide-border">
           {Array.from({ length: rows }, (_, i) => (
-            <div key={i} className="p-4">
+            // `data-slot`, the convention this file's own `Skeleton` primitive
+            // already uses, so tests/skeletons.spec.ts can measure a row
+            // without depending on the class names that describe its layout.
+            <div key={i} data-slot="skeleton-row" className="p-4">
               {/* Card shape below md, row shape from md up — the skeleton has
                   to switch with the content or it reintroduces the shift. */}
               <div className="space-y-2 md:hidden">

@@ -7,6 +7,7 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { DemoBanner } from "@/components/DemoBanner";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { APPOINTMENTS_PAGE_SIZE } from "@/constants";
 import { requireAdmin } from "@/lib/auth/guards";
 import { getRepository } from "@/lib/data";
 import { appointmentKeys } from "@/lib/query/keys";
@@ -31,14 +32,17 @@ export default async function AdminPage() {
   await requireAdmin();
 
   const repo = await getRepository();
-  const initial = await repo.listAppointments({ page: 1, pageSize: 10 });
+  const initial = await repo.listAppointments({
+    page: 1,
+    pageSize: APPOINTMENTS_PAGE_SIZE,
+  });
 
   const queryClient = makeQueryClient();
   queryClient.setQueryData(
     appointmentKeys.list({
       status: "all",
       page: 1,
-      pageSize: 10,
+      pageSize: APPOINTMENTS_PAGE_SIZE,
       sort: "createdAt",
       direction: "desc",
     }),
