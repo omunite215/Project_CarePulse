@@ -23,6 +23,27 @@ export const APPOINTMENT_STATUSES = [
   "cancelled",
 ] as const satisfies readonly AppointmentStatus[];
 
+/**
+ * The orderings the admin list supports, in the order the mobile sort control
+ * offers them. `createdAt` leads because it is the default — and because it is
+ * the one key with no column of its own, so the select is the only place its
+ * name is ever written down.
+ */
+export type AppointmentSortKey = "createdAt" | "schedule" | "patient";
+
+export const APPOINTMENT_SORT_KEYS = [
+  "createdAt",
+  "schedule",
+  "patient",
+] as const satisfies readonly AppointmentSortKey[];
+
+export type SortDirection = "asc" | "desc";
+
+export const SORT_DIRECTIONS = [
+  "asc",
+  "desc",
+] as const satisfies readonly SortDirection[];
+
 /** An authenticated identity. Maps to Appwrite's Users service. */
 export interface User {
   id: string;
@@ -112,8 +133,8 @@ export interface AppointmentQuery {
   to?: string;
   page?: number;
   pageSize?: number;
-  sort?: "schedule" | "createdAt" | "patient";
-  direction?: "asc" | "desc";
+  sort?: AppointmentSortKey;
+  direction?: SortDirection;
 }
 
 export interface CreateUserInput {
