@@ -101,6 +101,8 @@ export function AdminDashboard() {
         page={controller.filters.page}
         pageSize={APPOINTMENTS_PAGE_SIZE}
         onPageChange={controller.setPage}
+        sortState={controller.sortState}
+        onSortChange={controller.setSort}
         isFetching={isFetching}
         isFiltered={controller.isFiltered}
         onClearFilters={controller.clear}

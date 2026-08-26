@@ -11,7 +11,7 @@ import Image from "next/image";
 import { AppointmentModal } from "@/components/AppointmentModal";
 import { StatusBadge } from "@/components/StatusBadge";
 import { findDoctor } from "@/constants";
-import type { Appointment } from "@/lib/data/types";
+import type { Appointment, AppointmentSortKey } from "@/lib/data/types";
 import { formatDateTime } from "@/lib/utils";
 import type { tableFeatures } from "./features";
 
@@ -57,6 +57,13 @@ declare module "@tanstack/react-table" {
   > {
     /** Responsive visibility class, applied to header and cell alike. */
     className?: string;
+    /**
+     * Present only on columns `/api/v1/appointments` can order by. Absent means
+     * the header stays inert text — `status`, `primaryPhysician` and `reason`
+     * have no server-side ordering, and a control that looked clickable and did
+     * nothing would be worse than no control at all.
+     */
+    sortKey?: AppointmentSortKey;
   }
 }
 
@@ -72,7 +79,7 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "patient",
     header: "Patient",
-    meta: { className: PRIORITY.always },
+    meta: { className: PRIORITY.always, sortKey: "patient" },
     cell: ({ row }) => (
       <div className="min-w-36">
         <p className="text-14-medium text-foreground">
@@ -97,7 +104,7 @@ export const columns: AppointmentColumn[] = [
   {
     accessorKey: "schedule",
     header: "Appointment",
-    meta: { className: PRIORITY.md },
+    meta: { className: PRIORITY.md, sortKey: "schedule" },
     cell: ({ row }) => (
       <p className="text-14-regular min-w-32 text-foreground">
         {formatDateTime(row.original.schedule).dateTime}

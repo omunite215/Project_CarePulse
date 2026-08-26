@@ -1,7 +1,14 @@
 "use client";
 
 import { useTable } from "@tanstack/react-table";
-import { ChevronLeftIcon, ChevronRightIcon, SearchXIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsUpDownIcon,
+  SearchXIcon,
+} from "lucide-react";
 
 import { EmptyState } from "@/components/states/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -17,6 +24,7 @@ import type { Appointment } from "@/lib/data/types";
 import { AppointmentRowCard } from "./AppointmentRowCard";
 import { columns } from "./columns";
 import { tableFeatures } from "./features";
+import { ariaSortFor, nextSortState, type SortState } from "./sorting";
 
 interface DataTableProps {
   data: Appointment[];
@@ -24,6 +32,9 @@ interface DataTableProps {
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
+  /** Server-side ordering, held in the URL by `useAppointmentFilters`. */
+  sortState: SortState;
+  onSortChange: (next: SortState) => void;
   /** True while a filter or page change is in flight. */
   isFetching?: boolean;
   /** Shown when a filter matched nothing, rather than "no appointments". */
@@ -47,6 +58,8 @@ export function DataTable({
   page,
   pageSize,
   onPageChange,
+  sortState,
+  onSortChange,
   isFetching,
   isFiltered,
   onClearFilters,
@@ -119,14 +132,60 @@ export function DataTable({
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id} className="shad-table-row-header">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className={header.column.columnDef.meta?.className}
-                    >
-                      <table.FlexRender header={header} />
-                    </TableHead>
-                  ))}
+                  {headerGroup.headers.map((header) => {
+                    const sortKey = header.column.columnDef.meta?.sortKey;
+                    const ariaSort = sortKey
+                      ? ariaSortFor(sortState, sortKey)
+                      : undefined;
+
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={header.column.columnDef.meta?.className}
+                        // On the `th`, not on the button: `aria-sort` is a
+                        // header property, and only this element is the header.
+                        // It also means the button's accessible name stays the
+                        // column label alone — spelling the state into the name
+                        // as well would announce it twice.
+                        aria-sort={ariaSort}
+                      >
+                        {sortKey ? (
+                          // No height or vertical padding of its own.
+                          // `TableHead` is a fixed `h-12` that
+                          // `DataTableSkeleton` mirrors by hand, so a control
+                          // that grew the header would desync the skeleton
+                          // silently — the row parity test measures rows.
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onSortChange(nextSortState(sortState, sortKey))
+                            }
+                            className="inline-flex items-center gap-1 rounded-sm transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                          >
+                            <table.FlexRender header={header} />
+                            {ariaSort === "ascending" ? (
+                              <ArrowUpIcon
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                            ) : ariaSort === "descending" ? (
+                              <ArrowDownIcon
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <ChevronsUpDownIcon
+                                className="size-3.5 opacity-50"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </button>
+                        ) : (
+                          <table.FlexRender header={header} />
+                        )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableHeader>
