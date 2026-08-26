@@ -198,7 +198,13 @@ for (const width of WIDTHS) {
     // isPending skeleton branch — a real, width-independent readiness signal
     // (copied from tests/e2e/responsive.spec.ts) that the data-dependent
     // part of the layout has actually painted.
-    await expect(page.getByLabel("Search appointments")).toBeVisible();
+    //
+    // Counted first: the label matches two inputs briefly during hydration,
+    // and `toBeVisible()` throws a strict mode violation on a two-element
+    // locator instead of waiting. See tests/e2e/responsive.spec.ts.
+    const search = page.getByLabel("Search appointments");
+    await expect(search).toHaveCount(1);
+    await expect(search).toBeVisible();
     await stabilise(page);
     await page.screenshot({
       path: `${OUT}/admin-${width}.png`,

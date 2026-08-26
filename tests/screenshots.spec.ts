@@ -81,7 +81,13 @@ async function signInAsAdmin(page: Page) {
   // every width and a true signal that the data-dependent part of the
   // dashboard has actually painted — the same reason this assertion exists at
   // all, just satisfiable everywhere instead of only at desktop widths.
-  await expect(page.getByLabel("Search appointments")).toBeVisible();
+  //
+  // Counted first: the label matches two inputs briefly during hydration, and
+  // `toBeVisible()` throws a strict mode violation on a two-element locator
+  // instead of waiting. See tests/e2e/responsive.spec.ts.
+  const search = page.getByLabel("Search appointments");
+  await expect(search).toHaveCount(1);
+  await expect(search).toBeVisible();
 }
 
 test.beforeEach(async ({ page, request }) => {

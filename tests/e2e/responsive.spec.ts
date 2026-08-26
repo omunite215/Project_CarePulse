@@ -242,7 +242,18 @@ test.describe("admin", () => {
       // the data-dependent part of the layout (stat cards, filters, and the
       // table-or-card-list split at `md`) has actually painted, not just the
       // static server-rendered chrome around it.
-      await expect(page.getByLabel("Search appointments")).toBeVisible();
+      //
+      // Counted before it is asserted visible. While the page hydrates this
+      // label briefly matches two inputs, and `toBeVisible()` on a locator
+      // matching two elements throws a strict mode violation immediately
+      // rather than waiting — which is what made this test fail roughly one
+      // run in twenty, at whichever widths happened to land in that window.
+      // `toHaveCount(1)` polls until the duplicate has resolved, so it holds
+      // the invariant (the dashboard has exactly one search box) instead of
+      // stepping around it the way `.first()` would.
+      const search = page.getByLabel("Search appointments");
+      await expect(search).toHaveCount(1);
+      await expect(search).toBeVisible();
       await expectNoOverflow(page, `admin @ ${width}`);
       await expectTableFitsWrapper(page, `admin @ ${width}`);
     });
