@@ -91,7 +91,8 @@ The diagram source is committed at [`docs/architecture.drawio`](docs/architectur
 - Rate limited to five attempts per ten minutes, with `timingSafeEqual` comparison
 - Dashboard with scheduled / pending / cancelled counts across every appointment
 - Paginated table on TanStack Table v9, hydrated from the server so first paint makes zero API calls
-- Search, status filter and date-range filter held in the URL, so a filtered view is shareable and survives a refresh
+- Search, status filter, date-range filter and sort order held in the URL, so a filtered view is shareable and survives a refresh
+- Sortable by patient or appointment date, ordered server-side across every matching row rather than within the current page
 - Per-row confirm and cancel dialogs; the patient is texted on both, and a failed SMS is reported rather than hidden
 - CSV export of the current page, with formula-injection escaping
 
@@ -102,7 +103,7 @@ The diagram source is committed at [`docs/architecture.drawio`](docs/architectur
 - Loading, error, empty and offline states on every route — skeletons match the real layout, so nothing shifts
 - Server-validated forms; field-level errors map back onto the offending input and move focus there
 - WCAG AA contrast, visible focus rings, a skip link, and `prefers-reduced-motion` respected throughout
-- 156 unit tests and 36 end-to-end browser tests, plus a reproducible 20-shot screenshot suite
+- 172 unit tests and 41 end-to-end browser tests, plus a reproducible 20-shot screenshot suite
 
 <details>
 <summary>More screenshots</summary>
@@ -205,7 +206,7 @@ pnpm diagram           # exports docs/architecture.drawio to PNG (needs draw.io 
 - [x] URL-driven admin filters and CSV export
 - [x] Working light/dark themes and a WCAG AA pass
 - [x] Four-step registration wizard with per-step validation, URL step state and a pre-submit review
-- [ ] Sortable admin table columns, exposing the sort the read API already supports
+- [x] Sortable admin table columns, exposing the sort the read API already supports
 - [ ] Doctor availability managed in the admin UI rather than fixed clinic hours
 - [ ] Appointment volume chart on the dashboard
 - [ ] Email notifications alongside SMS
